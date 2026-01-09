@@ -1,0 +1,120 @@
+/* Diary components reuse Tailwind classes so we can retint everything centrally. */
+@layer components {
+  .diary-surface {
+    @apply border-sky-100 bg-white/95 text-slate-900 dark:border-slate-800 dark:bg-slate-900/70 dark:text-slate-100;
+  }
+
+  .diary-text-muted {
+    @apply text-sky-500 dark:text-sky-300;
+  }
+
+  .diary-heading {
+    @apply text-xl font-semibold text-slate-900 dark:text-slate-100;
+  }
+
+  .diary-label {
+    @apply text-xs uppercase tracking-[0.4em] text-sky-500 dark:text-sky-300;
+  }
+
+  .diary-search-input {
+    @apply border-sky-100 bg-sky-50/70 text-slate-700 placeholder:text-sky-400 focus:border-sky-300
+      dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-100 dark:placeholder:text-slate-500 dark:focus:border-sky-500;
+  }
+
+  .diary-search-icon {
+    @apply text-sky-400 dark:text-sky-300;
+  }
+
+  .diary-loader {
+    @apply text-sky-400 dark:text-sky-300;
+  }
+
+  .diary-error-text {
+    @apply text-red-500 dark:text-red-400;
+  }
+
+  .diary-error-panel {
+    @apply border-red-200 bg-red-50/60 text-red-600 dark:border-red-500/40 dark:bg-red-500/10 dark:text-red-300;
+  }
+
+  .diary-empty-panel {
+    @apply border-sky-100 bg-sky-50/60 dark:border-slate-800 dark:bg-slate-900/60;
+  }
+
+  .diary-empty-text {
+    @apply text-slate-500 dark:text-slate-300;
+  }
+
+  .diary-skeleton {
+    @apply bg-sky-100/70 dark:bg-slate-800/60;
+  }
+
+  .diary-link {
+    @apply text-sky-600 transition-colors hover:text-sky-800 dark:text-sky-300 dark:hover:text-sky-200;
+  }
+
+  .diary-card {
+    @apply border-sky-100 bg-white/95 text-slate-900 dark:border-slate-800 dark:bg-slate-900/70 dark:text-slate-100;
+  }
+
+  .diary-card-selected {
+    @apply border-sky-500 ring-sky-500/40 dark:border-sky-400 dark:ring-sky-400/40;
+  }
+
+  .diary-card-active {
+    @apply ring-sky-400/30 dark:ring-sky-500/40;
+  }
+
+  .diary-card-label,
+  .diary-mention-label {
+    @apply text-sky-500 dark:text-sky-300;
+  }
+
+  .diary-mention-block {
+    @apply border-sky-100 bg-sky-50/80 dark:border-slate-800 dark:bg-slate-900/60;
+  }
+
+  .diary-mention-text {
+    @apply text-slate-700 dark:text-slate-100;
+  }
+
+  .diary-mention-link {
+    @apply text-sky-600 underline decoration-sky-200 underline-offset-2 transition-colors hover:text-sky-800 dark:text-sky-300 dark:hover:text-sky-100;
+  }
+
+  .diary-textarea {
+    @apply border-sky-100 bg-sky-50/70 text-slate-900 focus:border-sky-300 focus:ring-0 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-100 dark:focus:border-sky-500;
+  }
+
+  .diary-entry-text {
+    @apply text-slate-900 dark:text-slate-100;
+  }
+
+  .diary-btn-primary {
+    @apply bg-sky-500 text-white shadow-sm transition-colors hover:bg-sky-600 disabled:bg-sky-400 dark:bg-sky-400 dark:text-slate-900 dark:hover:bg-sky-300;
+  }
+
+  .diary-btn-chip {
+    @apply bg-sky-50 text-sky-600 transition-colors hover:bg-sky-100 dark:bg-slate-800 dark:text-sky-300 dark:hover:bg-slate-700;
+  }
+
+  .diary-mention-preview {
+    @apply border-sky-100 bg-white/95 dark:border-slate-800 dark:bg-slate-900/60;
+  }
+
+  .diary-mention-preview-meta {
+    @apply text-xs text-slate-500 dark:text-slate-400;
+  }
+
+  .diary-mention-remove {
+    @apply text-[10px] uppercase tracking-[0.3em] text-sky-500 transition-colors hover:text-sky-700 dark:text-sky-300 dark:hover:text-sky-200;
+  }
+
+  .diary-blur-toggle {
+    @apply bg-slate-900/80 px-3 py-1 text-xs font-medium text-white/90 shadow dark:bg-slate-100/20 dark:text-white;
+  }
+
+  .diary-char-counter {
+    @apply text-sky-500 dark:text-sky-300;
+  }
+}

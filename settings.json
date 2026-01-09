@@ -1,0 +1,27 @@
+{
+  "tailwindCSS.classAttributes": [
+    "class",
+    "className",
+    "ngClass",
+    "class:list",
+    ".*Styles.*"
+  ],
+  "tailwindCSS.experimental.classRegex": [
+    ["cn\\(([^)]*)\\)", "(?:'|\"|`)([^']*)(?:'|\"|`)"]
+  ],
+  "java.configuration.updateBuildConfiguration": "disabled",
+  "java.project.sourcePaths": ["src/components/BottomSheetApproval"],
+  "editor.formatOnSave": true,
+  "editor.codeActionsOnSave": { 
+    "source.fixAll.eslint": "always", 
+    "source.fixAll.ts": "always", 
+    "source.sortImports": "always"
+  },
+  "prettier.singleQuote": true,
+  "prettier.printWidth": 70,
+  "[javascript]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "window.zoomLevel": 0,
+  "typescript.updateImportsOnFileMove.enabled": "always",
+}

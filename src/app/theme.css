@@ -1,0 +1,22 @@
+/* theme.css */
+.theme-default {
+  --secondary: oklch(95.4% 0.038 75.164);
+  --blend-darken: #1d1d1d;
+  --primary-foreground: #ffffff;
+  --primary-hover: oklch(50.5% 0.213 47.604);
+  --primary-focus: oklch(70.5% 0.213 47.604);
+  --warnings: var(--chart-5);
+  --color-btn-primary: var(--primary);
+}
+
+.theme-blue {
+  --brand: oklch(0.5106 0.2301 276.97);
+  --brand-600: oklch(0.65 0.2301 276.97);
+  --brand-foreground: oklch(0.90 0.2301 276.97);
+  --secondary: #cfcee7;
+  --primary-foreground: #ffffff;
+  --primary-hover: #4338ca;
+  --primary-focus: #3730a3;
+}
+
+/* opsional untuk secondary, accent, dll */
