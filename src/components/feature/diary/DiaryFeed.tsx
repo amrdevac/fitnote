@@ -308,7 +308,7 @@ export default function DiaryFeed({
               onChange={(event) => onSearchChange(event.target.value)}
               onFocus={() => setTimelineFocused(false)}
               placeholder="Cari catatan (Ctrl + /)"
-              className="diary-search-input w-48 rounded-full border pr-10 text-sm focus:ring-0 sm:w-64"
+              className="diary-search-input  w-48 rounded-xl  focus:border-0 focus:ring-1 pr-10 text-sm sm:w-64"
               aria-label="Cari catatan di timeline"
             />
             {!loading ? (
@@ -323,7 +323,7 @@ export default function DiaryFeed({
         <p className="diary-error-text mt-2 text-sm">{deleteError}</p>
       )}
 
-      <div ref={timelineRef} className="mt-6 flex h-[480px] flex-col space-y-4 overflow-y-auto pr-1" id="timeline-scroll">
+      <div ref={timelineRef} className="mt-6 flex flex-col space-y-4" id="timeline-scroll">
         {loading && (
           <div className="space-y-3">
             {Array.from({ length: 3 }).map((_, index) => (
@@ -479,7 +479,7 @@ function DiaryCard({
       <div className="relative">
         <p
           className={cn(
-            "diary-entry-text whitespace-pre-wrap break-all text-lg leading-relaxed transition",
+            "diary-entry-text whitespace-pre-wrap break-all leading-relaxed transition",
             shouldBlur && "blur-md hover:blur-none group-hover:blur-none"
           )}
         >

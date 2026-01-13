@@ -143,17 +143,27 @@ export default function DiaryComposer({ onPosted, mentions, onRemoveMention }: D
 
   return (
     <section
-      className="diary-surface rounded-3xl border p-6 shadow-sm backdrop-blur"
+      className="diary-surface rounded-3xl border p-6 shadow-sm backdrop-blur bg-white"
       data-section="compose"
     >
-      <div className="mb-4 flex flex-wrap items-center gap-3">
+      <div className="mb-4 flex flex-wrap items-center gap-3 justify-between">
         <div>
-          <p className="diary-label">
+          <p className="diary-label font-semibold">
             Compose
           </p>
-          <h3 className="diary-heading">
-            Tulis aja dulu
-          </h3>
+        </div>
+        <div>
+{blurSettings.composeBlur && (
+            <Button
+            variant={"outlineDefault"}
+              type="button"
+              onClick={() => setShowPlain((prev) => !prev)}
+              className="diary-blur-toggle rounded-full"
+            >
+              {showPlain ? "Blur lagi" : "Lihat teks"}
+            </Button>
+          )}
+
         </div>
       </div>
       <form className="space-y-4" onSubmit={handleSubmit}>
@@ -185,7 +195,7 @@ export default function DiaryComposer({ onPosted, mentions, onRemoveMention }: D
             data-id="diary-composer-textarea"
             placeholder={placeholder}
             className={cn(
-              "min-h-[150px] resize-none rounded-2xl diary-textarea text-lg leading-relaxed shadow-inner",
+              "min-h-[150px] resize-none rounded-2xl diary-textarea leading-relaxed shadow-inner  border focus-within:ring-0 ",
               blurSettings.composeBlur && !(showPlain || holdReveal)
                 ? "filter blur-[4px] group-hover:blur-none transition-all"
                 : ""
@@ -193,15 +203,7 @@ export default function DiaryComposer({ onPosted, mentions, onRemoveMention }: D
             disabled={submitting}
             onBlur={() => setHoldReveal(false)}
           />
-          {blurSettings.composeBlur && (
-            <button
-              type="button"
-              onClick={() => setShowPlain((prev) => !prev)}
-              className="diary-blur-toggle absolute right-3 top-3 rounded-full"
-            >
-              {showPlain ? "Blur lagi" : "Lihat teks"}
-            </button>
-          )}
+          
         </div>
         <div className="flex flex-wrap items-center gap-3 text-sm diary-text-muted">
           <span className="diary-char-counter font-mono">

@@ -135,27 +135,30 @@ export default function DiaryPinQuickSettings() {
 
   return (
     <section className="rounded-3xl border border-slate-200 bg-white/90 p-6 shadow-sm backdrop-blur">
-      <div className="flex flex-wrap items-center gap-3">
+      <div className="flex flex-col flex-wrap items-center gap-3">
         <div className="flex-1">
           <p className="text-sm uppercase tracking-[0.4em] text-slate-400">Diary PIN</p>
           <h2 className="text-xl font-semibold text-slate-900">Pengaturan cepat</h2>
           <p className="text-xs text-slate-500">Atur master & decoy PIN tanpa pindah halaman.</p>
         </div>
-        <Button onClick={() => setOpen(true)} size="sm" className="rounded-full">
-          <LockKeyhole className="h-4 w-4" />
-          Pengaturan PIN
-        </Button>
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon"
-          className="rounded-full"
-          onClick={() => fetchStatus()}
-          disabled={statusLoading}
-          aria-label="Refresh status PIN"
-        >
-          <RefreshCcw className={cn("h-4 w-4", statusLoading && "animate-spin")} />
-        </Button>
+        <div className="flex w-full justify-between">
+
+          <Button onClick={() => setOpen(true)} size="sm" variant={"outline"} className="rounded-full">
+            <LockKeyhole className="h-4 w-4" />
+            Pengaturan PIN
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="rounded-full"
+            onClick={() => fetchStatus()}
+            disabled={statusLoading}
+            aria-label="Refresh status PIN"
+          >
+            <RefreshCcw className={cn("h-4 w-4", statusLoading && "animate-spin")} />
+          </Button>
+        </div>
       </div>
 
       <div className="mt-4 flex flex-wrap items-center gap-2">
@@ -177,8 +180,8 @@ export default function DiaryPinQuickSettings() {
         {statusError
           ? statusError
           : status?.needsSetup
-          ? "Belum ada master PIN yang tersimpan. Wajib set minimal sekali."
-          : `Terakhir diperbarui: ${lastUpdatedLabel}`}
+            ? "Belum ada master PIN yang tersimpan. Wajib set minimal sekali."
+            : `Terakhir diperbarui: ${lastUpdatedLabel}`}
       </div>
 
       <Dialog

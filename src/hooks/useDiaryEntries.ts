@@ -42,7 +42,12 @@ export function useDiaryEntries(searchQuery = "") {
           params.set("q", normalizedSearch);
         }
         const currentCursor = cursorRef.current;
-        if (!isReset && currentCursor) {
+        if (!isReset) {
+          if (currentCursor == null) {
+            setLoadingMore(false);
+            setHasMore(false);
+            return;
+          }
           params.set("cursor", String(currentCursor));
         }
         const res = await fetch(`/api/diary?${params.toString()}`, { cache: "no-store" });

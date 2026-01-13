@@ -18,7 +18,9 @@ interface DiarySessionValue {
   status: SessionStatus;
   mode: DiaryMode | null;
   blurSettings: BlurSettings;
+  textScale: number;
   updateBlurSettings: (updater: (prev: BlurSettings) => BlurSettings) => void;
+  adjustTextScale: (direction: "increase" | "decrease") => void;
   unlock: (pin: string) => Promise<DiaryMode>;
   lock: () => void;
 }
@@ -32,12 +34,22 @@ const DEFAULT_BLUR: BlurSettings = {
 };
 
 const BLUR_STORAGE_KEY = "diary_blur_settings";
+const TEXT_SCALE_STORAGE_KEY = "diary_text_scale";
+const DEFAULT_TEXT_SCALE = 1;
+const MIN_TEXT_SCALE = 0.1;
+const MAX_TEXT_SCALE = 1.25;
+const TEXT_SCALE_STEP = 0.1;
+
+const clampTextScale = (value: number) => {
+  return Math.min(MAX_TEXT_SCALE, Math.max(MIN_TEXT_SCALE, Number(value.toFixed(2))));
+};
 
 export default function DiarySessionProvider({ children }: { children: React.ReactNode }) {
   const [status, setStatus] = useState<SessionStatus>("loading");
   const [mode, setMode] = useState<DiaryMode | null>(null);
   const [blurSettings, setBlurSettings] = useState<BlurSettings>(DEFAULT_BLUR);
   const [hydrated, setHydrated] = useState(false);
+  const [textScale, setTextScale] = useState(DEFAULT_TEXT_SCALE);
 
   useEffect(() => {
     setHydrated(true);
@@ -55,6 +67,13 @@ export default function DiarySessionProvider({ children }: { children: React.Rea
         // ignore broken data
       }
     }
+    const savedScale = window.localStorage.getItem(TEXT_SCALE_STORAGE_KEY);
+    if (savedScale) {
+      const parsedScale = parseFloat(savedScale);
+      if (!Number.isNaN(parsedScale)) {
+        setTextScale(clampTextScale(parsedScale));
+      }
+    }
   }, []);
 
   useEffect(() => {
@@ -65,6 +84,19 @@ export default function DiarySessionProvider({ children }: { children: React.Rea
       // ignore storage failures
     }
   }, [blurSettings, hydrated]);
+
+  useEffect(() => {
+    if (!hydrated) return;
+    try {
+      window.localStorage.setItem(TEXT_SCALE_STORAGE_KEY, String(textScale));
+    } catch {
+      // ignore storage failures
+    }
+  }, [textScale, hydrated]);
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    document.documentElement.style.setProperty("--diary-text-scale", String(textScale));
+  }, [textScale]);
 
   useEffect(() => {
     let active = true;
@@ -118,6 +150,13 @@ export default function DiarySessionProvider({ children }: { children: React.Rea
     fetch("/api/auth/pin", { method: "DELETE" }).catch(() => null);
   }, []);
 
+  const adjustTextScale = useCallback((direction: "increase" | "decrease") => {
+    setTextScale((prev) => {
+      const delta = direction === "increase" ? TEXT_SCALE_STEP : -TEXT_SCALE_STEP;
+      return clampTextScale(prev + delta);
+    });
+  }, []);
+
   useEffect(() => {
     const pressed = new Set<string>();
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -153,11 +192,27 @@ export default function DiarySessionProvider({ children }: { children: React.Rea
     };
   }, [lock]);
 
+  useEffect(() => {
+    const handleScaleShortcut = (event: KeyboardEvent) => {
+      if (!event.ctrlKey || !event.shiftKey) return;
+      if (event.key === "<") {
+        event.preventDefault();
+        adjustTextScale("decrease");
+      } else if (event.key === ">") {
+        event.preventDefault();
+        adjustTextScale("increase");
+      }
+    };
+    window.addEventListener("keydown", handleScaleShortcut);
+    return () => window.removeEventListener("keydown", handleScaleShortcut);
+  }, [adjustTextScale]);
+
   const value = useMemo<DiarySessionValue>(
     () => ({
       status,
       mode,
       blurSettings,
+      textScale,
       updateBlurSettings: (updater) =>
         setBlurSettings((prev) => {
           const next = updater(prev);
@@ -167,10 +222,11 @@ export default function DiarySessionProvider({ children }: { children: React.Rea
             feedRevealMode: next.feedRevealMode ?? "hover",
           };
         }),
+      adjustTextScale,
       unlock,
       lock,
     }),
-    [status, mode, blurSettings, unlock, lock]
+    [status, mode, blurSettings, textScale, adjustTextScale, unlock, lock]
   );
 
   return (
