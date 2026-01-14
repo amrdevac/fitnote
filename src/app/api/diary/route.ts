@@ -128,7 +128,7 @@ export async function POST(request: NextRequest) {
     sql: `INSERT INTO ${TABLE} (content, is_decoy) VALUES (?, ?) RETURNING *`,
     args: [storedContent, target === "decoy" ? 1 : 0],
   });
-  const record = inserted.rows[0] as DiaryEntryRecord | undefined;
+  const record = inserted.rows[0] as unknown as DiaryEntryRecord | undefined;
   if (!record) {
     return NextResponse.json({ error: "Gagal menyimpan catatan." }, { status: 500 });
   }

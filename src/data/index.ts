@@ -8,7 +8,6 @@ import { Client } from "./trusted";
 export namespace hardData {
   export const product = productData;
   export const project = Project ;
-  export const service = Service ;
   export const client = Client ;
   export const gallery = Gallery ;
   export const about = About ;
