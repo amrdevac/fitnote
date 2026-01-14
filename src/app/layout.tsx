@@ -8,6 +8,7 @@ import "aos/dist/aos.css";
 import ProgressBarProviders from "@/components/providers/ProgressBar";
 import DiarySessionProvider from "@/components/providers/DiarySessionProvider";
 import { ToastProvider } from "@/ui/use-toast";
+import QueryProvider from "@/components/providers/QueryProvider";
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
@@ -41,11 +42,13 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <ToastProvider>
-          <ProgressBarProviders>
-            <DiarySessionProvider>{children}</DiarySessionProvider>
-          </ProgressBarProviders>
-        </ToastProvider>
+        <QueryProvider>
+          <ToastProvider>
+            <ProgressBarProviders>
+              <DiarySessionProvider>{children}</DiarySessionProvider>
+            </ProgressBarProviders>
+          </ToastProvider>
+        </QueryProvider>
       </body>
     </html>
   );

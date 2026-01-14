@@ -76,7 +76,9 @@ export const validateField = (
   customMessages: Record<string, string> = {},
   objCustomResponse: CustomResponse = {}
 ) => {
-  const { setError, clearError } = useValidationStore.getState();
+  const validationStore = useValidationStore.getState();
+  const setError = validationStore.setError;
+  const clearError = validationStore.clearError;
   const rules = rule.includes("|") ? rule.split("|") : [rule];
   const errors: string[] = [];
   rules.forEach((r) => {
@@ -101,8 +103,8 @@ export const validateInput = (
     objCustomResponse?: CustomResponse;
   }
 ) => {
-  const { reset } = useValidationStore.getState();
-  reset();
+  const validationStore = useValidationStore.getState();
+  validationStore.reset();
   const entries = Object.entries(objInput);
   entries.forEach(([key, val]) => {
     const spec = validation[key];
@@ -117,8 +119,8 @@ export const validateInput = (
     }
     validateField(key, val, rule, customMessages, objCustomResponse);
   });
-  const { errors } = useValidationStore.getState();
-  if (Object.keys(errors).length) {
+  const finalErrors = useValidationStore.getState().errors;
+  if (Object.keys(finalErrors).length) {
     throw new Error("Validation Error");
   }
 };

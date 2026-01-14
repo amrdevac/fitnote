@@ -22,7 +22,9 @@ export async function PUT(req: Request) {
 }
 
 export async function DELETE(req: Request) {
-  const { id }: { id: number } = await req.json();
-  await turso<ServiceType>("services").where("id", id).delete();
+  const payload = (await req.json()) as { id: number };
+  await turso<ServiceType>("services")
+    .where("id", payload.id)
+    .delete();
   return NextResponse.json({ success: true });
 }

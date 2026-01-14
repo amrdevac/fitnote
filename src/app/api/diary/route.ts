@@ -124,14 +124,16 @@ export async function POST(request: NextRequest) {
 
   const storedContent = encodeMentions(content, mentionsInput);
 
-  await turso<DiaryEntryRecord>(TABLE)
-    .create({
-      content: storedContent,
-      is_decoy: target === "decoy" ? 1 : 0,
-    })
-    .save();
+  const inserted = await client.execute({
+    sql: `INSERT INTO ${TABLE} (content, is_decoy) VALUES (?, ?) RETURNING *`,
+    args: [storedContent, target === "decoy" ? 1 : 0],
+  });
+  const record = inserted.rows[0] as DiaryEntryRecord | undefined;
+  if (!record) {
+    return NextResponse.json({ error: "Gagal menyimpan catatan." }, { status: 500 });
+  }
 
-  return NextResponse.json({ success: true });
+  return NextResponse.json({ success: true, entry: mapDiaryRecord(record) });
 }
 
 export async function DELETE(request: NextRequest) {

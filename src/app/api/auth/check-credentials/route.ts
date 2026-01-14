@@ -13,7 +13,8 @@ type DbUser = {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { username, password } = body || {};
+    const username = body?.username;
+    const password = body?.password;
     if (!username || !password) {
       return ApiResponse.error("Username and password are required", 400);
     }

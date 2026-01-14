@@ -1,128 +1,60 @@
 "use client";
 
-import { useDiarySession } from "@/components/providers/DiarySessionProvider";
-import { DiaryMode, MentionReference } from "@/types/diary";
+import { DiaryEntry, MentionReference } from "@/types/diary";
 import { cn } from "@/lib/utils";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Textarea } from "@/ui/textarea";
 import { Button } from "@/ui/button";
-import { useToast } from "@/ui/use-toast";
+import { useDiaryComposer } from "@/hooks/useDiaryComposer";
+import { createShortcutHandler } from "@/lib/keyboard";
+import { useEffect, useMemo } from "react";
 
 interface DiaryComposerProps {
-  onPosted: () => void;
+  onPosted: (entry: DiaryEntry) => void;
   mentions: MentionReference[];
   onRemoveMention: (id: number) => void;
 }
 
-const MAX_LENGTH = 1000;
-
 export default function DiaryComposer({ onPosted, mentions, onRemoveMention }: DiaryComposerProps) {
-  const { mode, blurSettings } = useDiarySession();
-  const { toast } = useToast();
-  const [content, setContent] = useState("");
-  const [targetMode, setTargetMode] = useState<DiaryMode>("real");
-  const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [showPlain, setShowPlain] = useState(false);
-  const [holdReveal, setHoldReveal] = useState(false);
-  const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+  const diaryComposer = useDiaryComposer({ onPosted, mentions });
+  const textareaRef = diaryComposer.textareaRef;
+
+  const isTextareaFocused = () => document.activeElement === textareaRef.current;
+
+  const handleKeyDown = useMemo(
+    () =>
+      createShortcutHandler([
+        {
+          combo: "escape",
+          when: () => isTextareaFocused(),
+          handler: () => {
+            diaryComposer.setHoldReveal(false);
+            textareaRef.current?.blur();
+          },
+        },
+        {
+          combo: "ctrl+alt+i",
+          handler: () => textareaRef.current?.focus(),
+        },
+        {
+          combo: "ctrl+alt+s",
+          when: () => isTextareaFocused(),
+          handler: () => diaryComposer.setHoldReveal(true),
+        },
+        {
+          combo: "ctrl+enter",
+          when: () => isTextareaFocused(),
+          handler: () => diaryComposer.submitDiary(),
+        },
+      ]),
+    [diaryComposer.setHoldReveal, diaryComposer.submitDiary, textareaRef]
+  );
 
   useEffect(() => {
-    setTargetMode(mode === "decoy" ? "decoy" : "real");
-  }, [mode]);
-
-  const remaining = MAX_LENGTH - content.length;
-  const canPost = content.trim().length > 0 && !submitting;
-  const placeholder = useMemo(() => {
-    if (mode === "decoy") {
-      return "Tulis cerita versi aman buat dibaca siapapun...";
-    }
-    return "Curhat aja di sini. Semua kabur kalau blur aktif.";
-  }, [mode]);
-  const shouldBlurContent = blurSettings.composeBlur && !(showPlain || holdReveal);
-
-  const submitDiary = useCallback(async () => {
-    if (!canPost) return;
-    setSubmitting(true);
-    setError(null);
-    try {
-      const payload: Record<string, any> = { content };
-      if (mode === "real") {
-        payload.targetMode = targetMode;
-      }
-      if (mentions.length) {
-        payload.mentions = mentions.map((mention) => ({
-          id: mention.id,
-          preview: mention.preview,
-          createdAt: mention.createdAt,
-        }));
-      }
-      const res = await fetch("/api/diary", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-      const data = await res.json().catch(() => null);
-      if (!res.ok || !data?.success) {
-        throw new Error(data?.error || "Gagal menyimpan diary.");
-      }
-      setContent("");
-      setShowPlain(false);
-      onPosted();
-      toast({
-        title: "Catatan tersimpan",
-        description: "Diary baru berhasil ditambahkan.",
-      });
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Terjadi kesalahan.");
-      toast({
-        title: "Gagal menyimpan",
-        description: err instanceof Error ? err.message : "Terjadi kesalahan.",
-        variant: "destructive",
-      });
-    } finally {
-      setSubmitting(false);
-    }
-  }, [canPost, content, mode, onPosted, targetMode, mentions, toast]);
-
-  const handleSubmit = async (event: React.FormEvent) => {
-    event.preventDefault();
-    submitDiary();
-  };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [handleKeyDown]);
 
   useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape" && document.activeElement === textareaRef.current) {
-        event.preventDefault();
-        setHoldReveal(false);
-        textareaRef.current?.blur();
-        return;
-      }
-      if (event.ctrlKey && event.altKey && event.key.toLowerCase() === "i") {
-        event.preventDefault();
-        textareaRef.current?.focus();
-        return;
-      }
-      if (
-        event.ctrlKey &&
-        event.altKey &&
-        event.key.toLowerCase() === "s" &&
-        document.activeElement === textareaRef.current
-      ) {
-        event.preventDefault();
-        setHoldReveal(true);
-        return;
-      }
-      if (
-        event.ctrlKey &&
-        event.key === "Enter" &&
-        document.activeElement === textareaRef.current
-      ) {
-        event.preventDefault();
-        submitDiary();
-      }
-    };
-
     const handleKeyUp = (event: KeyboardEvent) => {
       if (
         event.key.toLowerCase() === "s" ||
@@ -130,17 +62,17 @@ export default function DiaryComposer({ onPosted, mentions, onRemoveMention }: D
         !event.altKey ||
         document.activeElement !== textareaRef.current
       ) {
-        setHoldReveal((prev) => (prev ? false : prev));
+        diaryComposer.setHoldReveal((prev) => (prev ? false : prev));
       }
     };
-
-    window.addEventListener("keydown", handleKeyDown);
     window.addEventListener("keyup", handleKeyUp);
-    return () => {
-      window.removeEventListener("keydown", handleKeyDown);
-      window.removeEventListener("keyup", handleKeyUp);
-    };
-  }, [submitDiary]);
+    return () => window.removeEventListener("keyup", handleKeyUp);
+  }, [diaryComposer.setHoldReveal, textareaRef]);
+
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
+    diaryComposer.submitDiary();
+  };
 
   return (
     <section
@@ -154,17 +86,16 @@ export default function DiaryComposer({ onPosted, mentions, onRemoveMention }: D
           </p>
         </div>
         <div>
-{blurSettings.composeBlur && (
+          {diaryComposer.composeBlurEnabled && (
             <Button
-            variant={"outlineDefault"}
+              variant={"outlineDefault"}
               type="button"
-              onClick={() => setShowPlain((prev) => !prev)}
+              onClick={() => diaryComposer.togglePlainView()}
               className="diary-blur-toggle rounded-full"
             >
-              {showPlain ? "Blur lagi" : "Lihat teks"}
+              {diaryComposer.showPlain ? "Blur lagi" : "Lihat teks"}
             </Button>
           )}
-
         </div>
       </div>
       <form className="space-y-4" onSubmit={handleSubmit}>
@@ -172,7 +103,7 @@ export default function DiaryComposer({ onPosted, mentions, onRemoveMention }: D
           <div
             className={cn(
               "diary-mention-block rounded-2xl border p-4 space-y-2 transition-all",
-              shouldBlurContent && "filter blur-[4px] hover:blur-none"
+              diaryComposer.shouldBlurContent && "filter blur-[4px] hover:blur-none"
             )}
           >
             <p className="diary-label">Menanggapi</p>
@@ -195,32 +126,32 @@ export default function DiaryComposer({ onPosted, mentions, onRemoveMention }: D
         )}
         <div className="relative group">
           <Textarea
-            ref={textareaRef}
-            value={content}
-            onChange={(event) => setContent(event.target.value.slice(0, MAX_LENGTH))}
+            ref={diaryComposer.textareaRef}
+            value={diaryComposer.content}
+            onChange={(event) => diaryComposer.handleContentChange(event.target.value)}
             data-id="diary-composer-textarea"
-            placeholder={placeholder}
+            placeholder={diaryComposer.placeholder}
             className={cn(
               "min-h-[150px] resize-none rounded-2xl diary-textarea leading-relaxed shadow-inner border focus-within:ring-0",
-              shouldBlurContent ? "filter blur-[4px] group-hover:blur-none transition-all" : ""
+              diaryComposer.shouldBlurContent ? "filter blur-[4px] group-hover:blur-none transition-all" : ""
             )}
-            disabled={submitting}
-            onBlur={() => setHoldReveal(false)}
+            disabled={diaryComposer.isPosting}
+            onBlur={() => diaryComposer.setHoldReveal(false)}
           />
           
         </div>
         <div className="flex flex-wrap items-center gap-3 text-sm diary-text-muted">
           <span className="diary-char-counter font-mono">
-            {remaining} karakter tersisa
+            {diaryComposer.remaining} karakter tersisa
           </span>
-          {error && <span className="diary-error-text">{error}</span>}
+          {diaryComposer.error && <span className="diary-error-text">{diaryComposer.error}</span>}
           <Button
             type="submit"
-            disabled={!canPost}
+            disabled={!diaryComposer.canPost}
             variant="default"
             className="ml-auto rounded-full px-6"
           >
-            {submitting ? "Menyimpan..." : "Posting"}
+            {diaryComposer.isPosting ? "Menyimpan..." : "Posting"}
           </Button>
         </div>
       </form>
