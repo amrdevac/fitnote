@@ -1,4 +1,4 @@
-import { client } from "./client";
+import { getTursoClient } from "./client";
 
 type WhereClause<T> = Partial<Record<keyof T, any>>;
 type RelationType = "hasOne" | "hasMany";
@@ -22,6 +22,16 @@ class TursoQuery<T extends Record<string, any>> {
 
   constructor(table: string) {
     this.table = table;
+  }
+
+  private getClient() {
+    const client = getTursoClient();
+    if (!client) {
+      throw new Error(
+        "Turso client is not configured. Set TURSO_DATABASE_URL and TURSO_AUTH_TOKEN to enable database access."
+      );
+    }
+    return client;
   }
 
   where<K extends keyof T>(column: K, value: T[K]) {
@@ -78,6 +88,7 @@ class TursoQuery<T extends Record<string, any>> {
     if (this._limit) sql += ` LIMIT ${this._limit}`;
     if (this._offset) sql += ` OFFSET ${this._offset}`;
 
+    const client = this.getClient();
     const result = await client.execute({ sql, args });
     const plain = result.rows.map((row) => ({ ...row })) as unknown as T[];
 
@@ -128,6 +139,7 @@ class TursoQuery<T extends Record<string, any>> {
       ","
     )}) VALUES (${placeholders})`;
     const args = Object.values(this.data);
+    const client = this.getClient();
     await client.execute({ sql, args });
     return { success: true };
   }
@@ -147,6 +159,7 @@ class TursoQuery<T extends Record<string, any>> {
     const sql = `UPDATE ${this.table} SET ${setClause} WHERE ${whereClause}`;
     const args = [...Object.values(data), ...Object.values(this.whereClause)];
 
+    const client = this.getClient();
     await client.execute({ sql, args });
     return { success: true };
   }
@@ -164,6 +177,7 @@ class TursoQuery<T extends Record<string, any>> {
       (v): v is string | number | bigint | null => v !== undefined
     );
 
+    const client = this.getClient();
     await client.execute({ sql, args });
     return { success: true };
   }
