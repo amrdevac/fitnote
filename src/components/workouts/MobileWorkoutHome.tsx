@@ -74,6 +74,7 @@ const MobileWorkoutHome = () => {
       return;
     }
     showSuccess("Set tersimpan sementara.");
+    weightInputRef.current?.focus();
   }
 
   function handleSaveMovement() {
@@ -101,14 +102,25 @@ const MobileWorkoutHome = () => {
     [workoutSession.sessions]
   );
 
+  const trimmedMovementQuery = movementQuery.trim();
+
   const filteredMovements = useMemo(() => {
-    if (!movementQuery.trim()) {
+    if (!trimmedMovementQuery) {
       return workoutSession.movementLibrary;
     }
     return workoutSession.movementLibrary.filter((movement) =>
-      movement.name.toLowerCase().includes(movementQuery.toLowerCase())
+      movement.name.toLowerCase().includes(trimmedMovementQuery.toLowerCase())
     );
-  }, [movementQuery, workoutSession.movementLibrary]);
+  }, [trimmedMovementQuery, workoutSession.movementLibrary]);
+
+  const hasExactMovement = useMemo(() => {
+    if (!trimmedMovementQuery) {
+      return false;
+    }
+    return workoutSession.movementLibrary.some(
+      (movement) => movement.name.toLowerCase() === trimmedMovementQuery.toLowerCase()
+    );
+  }, [trimmedMovementQuery, workoutSession.movementLibrary]);
 
   useEffect(() => {
     if (sheetOpen && focusInputOnOpen) {
@@ -122,6 +134,16 @@ const MobileWorkoutHome = () => {
     setSelectedMovementName(selected?.name ?? "");
     setMovementQuery("");
     weightInputRef.current?.focus();
+  }
+
+  function handleAddCustomMovement() {
+    const result = workoutSession.addCustomMovement(trimmedMovementQuery || movementQuery);
+    if (!result.success || !result.data) {
+      showError(result.error);
+      return;
+    }
+    handleSelectMovement(result.data.id);
+    showSuccess("Gerakan baru ditambahkan.");
   }
 
   function handleAutoAdvance(field: "weight" | "reps" | "rest", value: string) {
@@ -283,10 +305,8 @@ const MobileWorkoutHome = () => {
                         onChange={(event) => {
                           const value = event.target.value;
                           setMovementQuery(value);
-                          if (!value) {
-                            setSelectedMovementName(null);
-                            workoutSession.setCurrentMovementId("");
-                          }
+                          setSelectedMovementName(null);
+                          workoutSession.setCurrentMovementId("");
                         }}
                       className="h-11 flex-1 rounded-lg border-slate-200 bg-white text-base font-medium text-slate-900"
                       />
@@ -309,6 +329,16 @@ const MobileWorkoutHome = () => {
                     </div>
                     {movementQuery && (
                       <div className="max-h-40 overflow-y-auto rounded-lg border border-slate-200 bg-white">
+                        {!hasExactMovement && trimmedMovementQuery && (
+                          <button
+                            type="button"
+                            className="flex w-full items-center justify-between border-b border-slate-100 px-4 py-2 text-left text-sm font-medium text-slate-900 hover:bg-slate-50"
+                            onClick={handleAddCustomMovement}
+                          >
+                            <span>Tambah “{trimmedMovementQuery}”</span>
+                            <PlusIcon className="size-4" />
+                          </button>
+                        )}
                         {filteredMovements.length === 0 && (
                           <p className="px-3 py-4 text-center text-xs text-slate-400">
                             Gerakan tidak ditemukan.

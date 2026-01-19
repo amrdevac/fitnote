@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { movementOptions, seedSessions } from "@/data/workouts";
-import { WorkoutMovement, WorkoutSession, WorkoutSet } from "@/types/workout";
+import { MovementOption, WorkoutMovement, WorkoutSession, WorkoutSet } from "@/types/workout";
 
 type WorkoutInputs = {
   weight: string;
@@ -26,7 +26,7 @@ const uniqueId = () => `${Date.now()}-${Math.random().toString(16).slice(2)}`;
 
 const useWorkoutSession = () => {
   const [sessions, setSessions] = useState<WorkoutSession[]>(seedSessions);
-  const movementLibrary = useMemo(() => movementOptions, []);
+  const [movementLibrary, setMovementLibrary] = useState(movementOptions);
   const [currentMovementId, setCurrentMovementId] = useState<string>(
     movementLibrary[0]?.id ?? ""
   );
@@ -118,6 +118,26 @@ const useWorkoutSession = () => {
     setStagedMovements([]);
   }
 
+  function addCustomMovement(name: string): ActionResult<MovementOption> {
+    const trimmed = name.trim();
+    if (!trimmed.length) {
+      return { success: false, error: "Nama gerakan wajib diisi." };
+    }
+    const existing = movementLibrary.find(
+      (movement) => movement.name.toLowerCase() === trimmed.toLowerCase()
+    );
+    if (existing) {
+      return { success: true, data: existing };
+    }
+    const customMovement: MovementOption = {
+      id: uniqueId(),
+      name: trimmed,
+      description: "Gerakan kustom",
+    };
+    setMovementLibrary((prev) => [...prev, customMovement]);
+    return { success: true, data: customMovement };
+  }
+
   return {
     sessions,
     movementLibrary,
@@ -134,6 +154,7 @@ const useWorkoutSession = () => {
     removeMovement,
     saveSession,
     resetBuilder,
+    addCustomMovement,
   };
 };
 
