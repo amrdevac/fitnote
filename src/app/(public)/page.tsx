@@ -1,17 +1,15 @@
 import { Metadata } from "next";
-import LandingPage from "@/components/contents/LandingPageContent";
-import ExampleServiceShowcase from "@/components/examples/ExampleServiceShowcase";
+import MobileWorkoutHome from "@/components/workouts/MobileWorkoutHome";
 
 export const metadata: Metadata = {
-  title: "Next.js Boiler Home",
-  description: "Boilerplate landing page plus hook + API contoh.",
+  title: "FitNote – Tracker Harian",
+  description: "Catat set latihan lewat UI mobile dengan gesture swipe kiri dan tombol plus.",
 };
 
 export default function Home() {
   return (
-    <main className="flex flex-col gap-16 pb-16">
-      <LandingPage />
-      <ExampleServiceShowcase />
+    <main className="bg-slate-50">
+      <MobileWorkoutHome />
     </main>
   );
 }
