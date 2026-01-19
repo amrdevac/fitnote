@@ -1,11 +1,17 @@
-import DiaryDashboard from "@/components/feature/diary/DiaryDashboard";
 import { Metadata } from "next";
+import LandingPage from "@/components/contents/LandingPageContent";
+import ExampleServiceShowcase from "@/components/examples/ExampleServiceShowcase";
 
 export const metadata: Metadata = {
-  title: "Diary Rahasia",
-  description: "Aplikasi diary dengan blur pintar dan PIN asli + decoy.",
+  title: "Next.js Boiler Home",
+  description: "Boilerplate landing page plus hook + API contoh.",
 };
 
 export default function Home() {
-  return <DiaryDashboard />;
+  return (
+    <main className="flex flex-col gap-16 pb-16">
+      <LandingPage />
+      <ExampleServiceShowcase />
+    </main>
+  );
 }

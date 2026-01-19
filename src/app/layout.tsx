@@ -5,14 +5,12 @@ import "./theme.css";
 import "aos/dist/aos.css";
 
 import ProgressBarProviders from "@/components/providers/ProgressBar";
-import DiarySessionProvider from "@/components/providers/DiarySessionProvider";
 import { ToastProvider } from "@/ui/use-toast";
 import QueryProvider from "@/components/providers/QueryProvider";
 
 export const metadata: Metadata = {
-  title: { default: "Private Diary", template: "%s | Private Diary" },
-  description:
-    "Aplikasi diary pribadi dengan blur pintar, PIN asli, dan PIN decoy.",
+  title: { default: "Next.js Boiler", template: "%s | Next.js Boiler" },
+  description: "Starter project with a couple of ready-to-use examples.",
   metadataBase: new URL("https://example.com"),
   icons: {
     icon: "/favicon.ico",
@@ -33,7 +31,7 @@ export default function RootLayout({
         <QueryProvider>
           <ToastProvider>
             <ProgressBarProviders>
-              <DiarySessionProvider>{children}</DiarySessionProvider>
+              {children}
             </ProgressBarProviders>
           </ToastProvider>
         </QueryProvider>

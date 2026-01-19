@@ -13,12 +13,4 @@ export const configApp = {
     TURSO_AUTH_TOKEN: process.env.TURSO_AUTH_TOKEN || "",
     TURSO_DATABASE_URL: process.env.TURSO_DATABASE_URL || "",
   },
-  diary: {
-    master_pin: process.env.DIARY_MASTER_PIN || "",
-    decoy_pin: process.env.DIARY_DECOY_PIN || "",
-    idle_timeout_minutes: (() => {
-      const value = Number(process.env.NEXT_PUBLIC_DIARY_IDLE_MINUTES ?? "1");
-      return Number.isFinite(value) && value >= 0 ? value : 1;
-    })(),
-  },
 };
