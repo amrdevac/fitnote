@@ -1,4 +1,5 @@
-const CACHE_NAME = "fitnote-cache-v1.1";
+const CACHE_VERSION = "v2";
+const CACHE_NAME = `fitnote-cache-${CACHE_VERSION}`;
 const OFFLINE_URL = "/offline.html";
 const ASSETS = [
   "/",
@@ -20,16 +21,19 @@ self.addEventListener("install", (event) => {
 
 self.addEventListener("activate", (event) => {
   event.waitUntil(
-    caches.keys().then((keys) =>
-      Promise.all(
-        keys.map((key) => {
-          if (key !== CACHE_NAME) {
-            return caches.delete(key);
-          }
-          return undefined;
-        })
+    caches
+      .keys()
+      .then((keys) =>
+        Promise.all(
+          keys.map((key) => {
+            if (key !== CACHE_NAME) {
+              return caches.delete(key);
+            }
+            return undefined;
+          })
+        )
       )
-    ).then(() => self.clients.claim())
+      .then(() => self.clients.claim())
   );
 });
 

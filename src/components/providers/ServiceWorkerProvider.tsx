@@ -14,6 +14,7 @@ const ServiceWorkerProvider = () => {
         const registration = await navigator.serviceWorker.register("/sw.js", {
           scope: "/",
         });
+        await registration.update();
         if (process.env.NODE_ENV === "development") {
           console.info("Service worker registered", registration.scope);
         }
