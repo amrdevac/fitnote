@@ -1,8 +1,13 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import type {
+  CSSProperties,
+  PointerEvent as ReactPointerEvent,
+  MouseEvent as ReactMouseEvent,
+} from "react";
 import { useRouter } from "next/navigation";
-import { PlusIcon, ChevronDown, LayersIcon, Repeat2Icon, ScaleIcon, TimerIcon } from "lucide-react";
+import { PlusIcon, ChevronDown, LayersIcon, Repeat2Icon, ScaleIcon, TimerIcon, CheckIcon } from "lucide-react";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/ui/card";
 import { Button } from "@/ui/button";
 import useWorkoutSession from "@/hooks/useWorkoutSession";
@@ -27,7 +32,6 @@ type ActiveMovement = {
 const sheetAnimationDuration = 220;
 const sheetCloseThreshold = 70;
 const sheetExpandThreshold = 25;
-const halfSheetHeight = 0.5;
 
 const MobileWorkoutHome = () => {
   const workoutSession = useWorkoutSession();
@@ -43,7 +47,12 @@ const MobileWorkoutHome = () => {
   const [isSheetMounted, setIsSheetMounted] = useState(false);
   const [isSheetVisible, setIsSheetVisible] = useState(false);
   const [sheetSnap, setSheetSnap] = useState<"half" | "full">("half");
+  const [selectedSessions, setSelectedSessions] = useState<Set<string>>(new Set());
+  const [isSelectionMode, setIsSelectionMode] = useState(false);
+  const [isArchiving, setIsArchiving] = useState(false);
   const sheetAnimationTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const selectionTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const selectionTriggeredRef = useRef(false);
 
   useEffect(() => {
     if (typeof document === "undefined") return;
@@ -64,6 +73,14 @@ const MobileWorkoutHome = () => {
   }, []);
 
   useEffect(() => {
+    return () => {
+      if (selectionTimerRef.current) {
+        clearTimeout(selectionTimerRef.current);
+      }
+    };
+  }, []);
+
+  useEffect(() => {
     if (typeof document === "undefined" || !isSheetMounted) return;
     const { style } = document.body;
     const previousOverflow = style.overflow;
@@ -78,6 +95,10 @@ const MobileWorkoutHome = () => {
 
   const openBuilder = () => {
     router.push("/builder");
+  };
+
+  const openTimers = () => {
+    router.push("/timers");
   };
 
   const toggleSession = (sessionId: string) => {
@@ -115,7 +136,8 @@ const MobileWorkoutHome = () => {
       }
     }
 
-    setSwipeOffset(Math.max(0, deltaX));
+    const clamped = Math.max(Math.min(deltaX, 80), -80);
+    setSwipeOffset(clamped);
   }
 
   function handleTouchEnd(event: React.TouchEvent<HTMLDivElement>) {
@@ -129,12 +151,21 @@ const MobileWorkoutHome = () => {
     if (swipeStartX.current === null) return;
     const delta = swipeStartX.current - (event.changedTouches[0]?.clientX ?? 0);
     if (delta > 80) {
-      setSwipeOffset(80);
-      openBuilder();
-    } else {
-      setSwipeOffset(0);
+      setSwipeOffset(120);
+      setTimeout(() => {
+        openBuilder();
+      }, 100);
+      return;
+    } else if (delta < -80) {
+      setSwipeOffset(-120);
+      setTimeout(() => {
+        openTimers();
+      }, 100);
+      return;
     }
+    setSwipeOffset(0);
     swipeStartX.current = null;
+    swipeStartY.current = null;
     setIsSwiping(false);
   }
 
@@ -210,10 +241,111 @@ const MobileWorkoutHome = () => {
     setSheetDragStart(null);
   }
 
-  const totalMovements = workoutSession.sessions.reduce(
-    (acc, session) => acc + session.movements.length,
-    0
+  const clearSelectionTimer = () => {
+    if (selectionTimerRef.current) {
+      clearTimeout(selectionTimerRef.current);
+      selectionTimerRef.current = null;
+    }
+    selectionTriggeredRef.current = false;
+  };
+
+  const enterSelectionMode = (sessionId: string) => {
+    setIsSelectionMode(true);
+    setSelectedSessions(new Set([sessionId]));
+  };
+
+  const tryStartSelection = (sessionId: string) => {
+    if (isSelectionMode) return;
+    clearSelectionTimer();
+    selectionTimerRef.current = setTimeout(() => {
+      selectionTriggeredRef.current = true;
+      selectionTimerRef.current = null;
+      enterSelectionMode(sessionId);
+    }, 350);
+  };
+
+  const handleCardPointerDown = (sessionId: string, event: ReactPointerEvent<HTMLDivElement>) => {
+    if (event.pointerType === "mouse" && event.button !== 0) return;
+    tryStartSelection(sessionId);
+  };
+
+  const handleCardPointerUp = () => {
+    if (selectionTimerRef.current) {
+      clearSelectionTimer();
+      return;
+    }
+    if (selectionTriggeredRef.current) {
+      selectionTriggeredRef.current = false;
+    }
+  };
+
+  const handleCardPointerLeave = () => {
+    if (selectionTimerRef.current) {
+      clearSelectionTimer();
+      selectionTriggeredRef.current = false;
+    }
+  };
+
+  const toggleSessionSelection = (sessionId: string) => {
+    setSelectedSessions((prev) => {
+      const next = new Set(prev);
+      if (next.has(sessionId)) {
+        next.delete(sessionId);
+      } else {
+        next.add(sessionId);
+      }
+      if (next.size === 0) {
+        setIsSelectionMode(false);
+      }
+      return next;
+    });
+  };
+
+  const exitSelectionMode = () => {
+    setIsSelectionMode(false);
+    setSelectedSessions(new Set());
+    selectionTriggeredRef.current = false;
+  };
+
+  const handleArchiveSelected = async () => {
+    if (!selectedSessions.size || isArchiving) return;
+    setIsArchiving(true);
+    try {
+      await workoutSession.archiveSessions([...selectedSessions]);
+      exitSelectionMode();
+    } finally {
+      setIsArchiving(false);
+    }
+  };
+
+  const visibleSessions = useMemo(
+    () => workoutSession.sessions.filter((session) => !session.archivedAt),
+    [workoutSession.sessions]
   );
+
+  const totalMovements = visibleSessions.reduce((acc, session) => acc + session.movements.length, 0);
+
+  const clampedSwipeOffset = Math.max(Math.min(swipeOffset, 80), -80);
+
+  useEffect(() => {
+    setSelectedSessions((prev) => {
+      const next = new Set(
+        [...prev].filter((id) => visibleSessions.some((session) => session.id === id))
+      );
+      if (next.size === prev.size) {
+        return prev;
+      }
+      if (next.size === 0) {
+        setIsSelectionMode(false);
+      }
+      return next;
+    });
+  }, [visibleSessions]);
+
+  const containerStyle: CSSProperties = {
+    overscrollBehavior: "none",
+    paddingTop: isSelectionMode ? "3.5rem" : undefined,
+  };
 
   return (
     <div
@@ -221,44 +353,92 @@ const MobileWorkoutHome = () => {
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
-      style={{ overscrollBehavior: "none" }}
+      style={containerStyle}
     >
+      {isSelectionMode && (
+        <div className="fixed inset-x-0 top-0 z-40 flex items-center justify-between bg-slate-900 px-5 py-3 text-white shadow-lg">
+          <div>
+            <p className="text-sm font-semibold">{selectedSessions.size} dipilih</p>
+            <p className="text-[11px] text-slate-200">Tap kartu lain untuk tambah/batal</p>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-white hover:bg-slate-800"
+              onClick={exitSelectionMode}
+            >
+              Batal
+            </Button>
+            <Button
+              size="sm"
+              className="bg-white text-slate-900 hover:bg-slate-100"
+              onClick={handleArchiveSelected}
+              disabled={isArchiving || selectedSessions.size === 0}
+            >
+              Arsip
+            </Button>
+          </div>
+        </div>
+      )}
       <div
         className={`flex grow flex-col ${isSwiping ? "" : "transition-transform duration-200"}`}
-        style={{ transform: `translateX(${-Math.min(swipeOffset, 80)}px)` }}
+        style={{ transform: `translateX(${-clampedSwipeOffset}px)` }}
       >
         <header className="flex flex-col gap-1 px-5 pb-4 pt-10">
           <div>
             <h1 className="text-3xl font-semibold text-slate-900">FitNote</h1>
             <p className="text-sm text-slate-500">
-              Catat gerakan dan set lewat halaman form khusus. Geser ke kiri untuk membuka builder.
+              Catat gerakan dan set lewat halaman form khusus. Geser ke kiri untuk membuka builder,
+              geser ke kanan untuk mengelola timer latihan.
             </p>
             <p className="text-xs text-slate-400">
-              {workoutSession.sessions.length} sesi · {totalMovements} gerakan
+              {visibleSessions.length} sesi · {totalMovements} gerakan
             </p>
           </div>
         </header>
         
 
         <div className="flex flex-1 flex-col gap-4 px-4">
-          {workoutSession.sessions.length === 0 && (
+          {visibleSessions.length === 0 && (
             <div className="rounded-2xl border border-dashed border-slate-300 bg-white/80 px-5 py-10 text-center text-sm text-slate-500">
               Catatan masih kosong. Tap tombol tambah atau swipe ke kiri untuk memulai.
             </div>
           )}
 
-          {workoutSession.sessions
+          {visibleSessions
             .slice()
             .sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1))
             .map((session) => {
               const isExpanded = expandedSessions.has(session.id);
+              const isSelected = selectedSessions.has(session.id);
               const sessionLabel = formatDate(session.createdAt);
               const totalSets = session.movements.reduce(
                 (acc, movement) => acc + movement.sets.length,
                 0
               );
               return (
-                <Card key={session.id} className="border-slate-200 bg-white shadow-sm">
+                <Card
+                  key={session.id}
+                  className={`relative border ${isSelected ? "border-slate-900 ring-2 ring-slate-900/20" : "border-slate-200"} bg-white shadow-sm transition`}
+                  onPointerDown={(event) => handleCardPointerDown(session.id, event)}
+                  onPointerUp={handleCardPointerUp}
+                  onPointerLeave={handleCardPointerLeave}
+                  onPointerCancel={handleCardPointerLeave}
+                  onClick={(event) => {
+                    if (!isSelectionMode) return;
+                    event.stopPropagation();
+                    toggleSessionSelection(session.id);
+                  }}
+                  onContextMenu={(event) => event.preventDefault()}
+                >
+                  {isSelectionMode && (
+                    <div
+                      className={`absolute right-3 top-3 flex h-6 w-6 items-center justify-center rounded-full border text-white ${isSelected ? "border-slate-900 bg-slate-900" : "border-slate-300 bg-white text-slate-400"}`}
+                    >
+                      {isSelected && <CheckIcon className="size-4" />}
+                    </div>
+                  )}
                   <CardHeader>
                     <div className="flex items-center justify-between">
                       <div>
@@ -302,7 +482,16 @@ const MobileWorkoutHome = () => {
                           { label: "Rest", value: `${totalRest} dtk`, icon: TimerIcon },
                         ];
 
-                        const handleMovementClick = () => openMovementSheet(movement, sessionLabel);
+                        const handleMovementClick = (
+                          event?: ReactMouseEvent<HTMLDivElement>
+                        ) => {
+                          if (isSelectionMode) {
+                            event?.stopPropagation();
+                            toggleSessionSelection(session.id);
+                            return;
+                          }
+                          openMovementSheet(movement, sessionLabel);
+                        };
 
                         return (
                           <div
@@ -310,11 +499,15 @@ const MobileWorkoutHome = () => {
                             className="rounded-2xl bg-slate-100 px-4 py-3 text-slate-700 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 transition-transform duration-150 active:scale-95"
                             role="button"
                             tabIndex={0}
-                            onClick={handleMovementClick}
+                            onClick={(event) => handleMovementClick(event)}
                             onKeyDown={(event) => {
                               if (event.key === "Enter" || event.key === " ") {
                                 event.preventDefault();
-                                handleMovementClick();
+                                if (isSelectionMode) {
+                                  toggleSessionSelection(session.id);
+                                } else {
+                                  handleMovementClick();
+                                }
                               }
                             }}
                           >
@@ -357,7 +550,14 @@ const MobileWorkoutHome = () => {
                         variant="ghost"
                         size="sm"
                         className="text-xs text-slate-600"
-                        onClick={() => toggleSession(session.id)}
+                        onClick={(event) => {
+                          if (isSelectionMode) {
+                            event.preventDefault();
+                            toggleSessionSelection(session.id);
+                            return;
+                          }
+                          toggleSession(session.id);
+                        }}
                       >
                         {isExpanded ? "Tutup ringkasan" : "Lihat detail"}{" "}
                         <ChevronDown
@@ -394,7 +594,7 @@ const MobileWorkoutHome = () => {
           <div
             role="dialog"
             aria-modal="true"
-            className="relative z-10 w-full rounded-t-3xl bg-white px-5 pb-8 pt-1 shadow-2xl transition-all duration-300"
+            className="relative z-10 flex w-full flex-col rounded-t-3xl bg-white px-5 pb-6 pt-1 shadow-2xl transition-all duration-300"
             style={{
               transform: `translateY(calc(${isSheetVisible ? "0%" : "100%"} + ${sheetDragOffset}px))`,
               height: sheetSnap === "full" ? "85vh" : "55vh",
@@ -416,10 +616,7 @@ const MobileWorkoutHome = () => {
                 Ketuk area ini atau tombol bawah untuk menutup.
               </p>
             </div>
-            <div
-              className="overflow-y-auto pb-4 transition-all duration-300"
-              style={{ maxHeight: sheetSnap === "full" ? "65vh" : "35vh" }}
-            >
+            <div className="flex-1 overflow-y-auto pb-4 transition-all duration-300">
               <div className="space-y-3">
                 {activeMovement.movement.sets.map((set, index) => (
                   <div
@@ -440,9 +637,11 @@ const MobileWorkoutHome = () => {
                 ))}
               </div>
             </div>
-            <Button variant="outline" className="mt-2 w-full" onClick={closeMovementSheet}>
-              Tutup
-            </Button>
+            <div className="pt-1">
+              <Button variant="outline" className="w-full" onClick={closeMovementSheet}>
+                Tutup
+              </Button>
+            </div>
           </div>
         </div>
       )}

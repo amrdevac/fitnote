@@ -281,38 +281,44 @@ const WorkoutBuilder = () => {
         className={`flex h-full w-full flex-col bg-white transition-transform duration-300 ${panelClasses}`}
       >
         <header className="flex items-center justify-between px-6 py-4">
+
           <Button variant="ghost" size="icon" onClick={closePanel} className="text-slate-600">
             <ArrowLeftIcon className="size-5" />
           </Button>
-          <Sheet open={settingsOpen} onOpenChange={setSettingsOpen}>
-            <SheetTrigger asChild>
-              <Button size="icon" variant="ghost" className="text-slate-500">
-                <Settings2Icon className="size-5" />
-              </Button>
-            </SheetTrigger>
-            <SheetContent
-              side="bottom"
-              className="rounded-t-3xl border-none bg-white px-6 pb-8 pt-6 text-slate-900"
-            >
-              <SheetHeader className="mb-4 px-0">
-                <SheetTitle>Pengaturan FitNote</SheetTitle>
-              </SheetHeader>
-              <div className="space-y-2">
-                <label className="flex items-center justify-between rounded-xl border border-slate-200 px-4 py-3">
-                  <span className="text-sm font-medium text-slate-800">
-                    Tampilkan tombol tambah set
-                  </span>
-                  <Toggle checked={showAddButton} onChange={setShowAddButton} />
-                </label>
-                <label className="flex items-center justify-between rounded-xl border border-slate-200 px-4 py-3">
-                  <span className="text-sm font-medium text-slate-800">
-                    Fokus otomatis ke input gerakan
-                  </span>
-                  <Toggle checked={focusInputOnOpen} onChange={setFocusInputOnOpen} />
-                </label>
-              </div>
-            </SheetContent>
-          </Sheet>
+          <div className="flex items-center  gap-3">
+            <div>
+              <p className=" uppercase tracking-wide text-slate-400">Pengelolaan Aktivitas</p>
+            </div>
+            <Sheet open={settingsOpen} onOpenChange={setSettingsOpen}>
+              <SheetTrigger asChild>
+                <Button size="icon" variant="ghost" className="text-slate-500">
+                  <Settings2Icon className="size-5" />
+                </Button>
+              </SheetTrigger>
+              <SheetContent
+                side="bottom"
+                className="rounded-t-3xl border-none bg-white px-6 pb-8 pt-6 text-slate-900"
+              >
+                <SheetHeader className="mb-4 px-0">
+                  <SheetTitle>Pengaturan FitNote</SheetTitle>
+                </SheetHeader>
+                <div className="space-y-2">
+                  <label className="flex items-center justify-between rounded-xl border border-slate-200 px-4 py-3">
+                    <span className="text-sm font-medium text-slate-800">
+                      Tampilkan tombol tambah set
+                    </span>
+                    <Toggle checked={showAddButton} onChange={setShowAddButton} />
+                  </label>
+                  <label className="flex items-center justify-between rounded-xl border border-slate-200 px-4 py-3">
+                    <span className="text-sm font-medium text-slate-800">
+                      Fokus otomatis ke input gerakan
+                    </span>
+                    <Toggle checked={focusInputOnOpen} onChange={setFocusInputOnOpen} />
+                  </label>
+                </div>
+              </SheetContent>
+            </Sheet>
+          </div>
         </header>
 
         <div className="flex-1 space-y-5 overflow-y-auto px-6 pb-40 pt-2">
@@ -500,7 +506,7 @@ const WorkoutBuilder = () => {
             <div className="rounded-2xl border border-slate-200 bg-white p-4">
               <div className="mb-3 flex items-center justify-between">
                 <p className="text-sm font-semibold text-slate-700">Gerakan di sesi ini</p>
-                
+
               </div>
               <div className="space-y-3">
                 {workoutSession.stagedMovements.map((movement) => {

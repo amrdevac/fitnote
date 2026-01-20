@@ -203,6 +203,24 @@ const useWorkoutSession = () => {
     }
   }
 
+  async function archiveSessions(ids: string[]) {
+    if (!ids.length) return;
+    const now = new Date().toISOString();
+    const idSet = new Set(ids);
+    const nextSessions = sessions.map((session) =>
+      idSet.has(session.id) && !session.archivedAt
+        ? { ...session, archivedAt: now }
+        : session
+    );
+    setSessions(nextSessions);
+    try {
+      await workoutsDb.replaceSessions(nextSessions);
+    } catch (error) {
+      console.error("Failed to archive sessions", error);
+      setSessions(sessions);
+    }
+  }
+
   function resetBuilder() {
     clearCurrentSets();
     setStagedMovements([]);
@@ -255,6 +273,7 @@ const useWorkoutSession = () => {
     resetBuilder,
     addCustomMovement,
     isInitialized,
+    archiveSessions,
   };
 };
 

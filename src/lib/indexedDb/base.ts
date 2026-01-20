@@ -1,13 +1,14 @@
 'use client';
 
 const DB_NAME = "fitnote-tracker";
-const DB_VERSION = 3;
+const DB_VERSION = 4;
 
 export const STORE_NAMES = {
   services: "fitnote-services",
   sessions: "fitnote-sessions",
   movements: "fitnote-movements",
   preferences: "fitnote-preferences",
+  timers: "fitnote-timers",
 } as const;
 
 export type FitnoteStore = (typeof STORE_NAMES)[keyof typeof STORE_NAMES];
@@ -35,6 +36,9 @@ export const openFitnoteDb = (): Promise<IDBDatabase> => {
       }
       if (!db.objectStoreNames.contains(STORE_NAMES.preferences)) {
         db.createObjectStore(STORE_NAMES.preferences, { keyPath: "id" });
+      }
+      if (!db.objectStoreNames.contains(STORE_NAMES.timers)) {
+        db.createObjectStore(STORE_NAMES.timers, { keyPath: "id" });
       }
     };
 
