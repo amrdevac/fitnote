@@ -28,6 +28,5 @@ Belum ada kebutuhan environment khusus. Kalau nanti mau hubungkan ke backend fav
 - `npm run build` – build production.
 - `npm start` – preview hasil build.
 - `npm run lint` – lint project (butuh konfigurasi ESLint).
-- `npm run db` – jalankan Turso dev server lokal (`database-blue-xylophone.db`, port 8082).
 
 Selamat bereksperimen 🔧

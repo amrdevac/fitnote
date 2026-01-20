@@ -1,5 +1,7 @@
-import { httpRequest } from "@/lib/httpRequest";
+'use client';
+
 import { Service } from "@/data/services";
+import servicesDb from "@/lib/indexedDb/services";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 /**
@@ -7,29 +9,29 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
  */
 const useServiceHook = () => {
   const queryClient = useQueryClient();
+  const isClient = typeof window !== "undefined";
 
   const getServices = useQuery<Service.Type[]>({
     queryKey: ["services"],
-    queryFn: () => httpRequest().internal("services").get<Service.Type[]>(),
+    queryFn: () => servicesDb.getAll(),
+    enabled: isClient,
+    initialData: [],
   });
 
   const createService = useMutation({
-    mutationFn: (data: Omit<Service.Type, "id">) =>
-      httpRequest().internal("services").payload(data).post(),
+    mutationFn: (data: Omit<Service.Type, "id">) => servicesDb.create(data),
     onSuccess: () =>
       queryClient.invalidateQueries({ queryKey: ["services"] }),
   });
 
   const updateService = useMutation({
-    mutationFn: (data: Service.Type) =>
-      httpRequest().internal("services").payload(data).put(),
+    mutationFn: (data: Service.Type) => servicesDb.update(data),
     onSuccess: () =>
       queryClient.invalidateQueries({ queryKey: ["services"] }),
   });
 
   const deleteService = useMutation({
-    mutationFn: (id: number) =>
-      httpRequest().internal("services").payload({ id }).delete(),
+    mutationFn: (id: number) => servicesDb.remove(id),
     onSuccess: () =>
       queryClient.invalidateQueries({ queryKey: ["services"] }),
   });
@@ -38,4 +40,3 @@ const useServiceHook = () => {
 };
 
 export default useServiceHook;
-

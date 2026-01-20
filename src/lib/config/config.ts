@@ -9,8 +9,4 @@ export const configApp = {
     // Public key can be exposed to client if needed
     public_key: process.env.NEXT_PUBLIC_IMAGEKIT_PUBLIC_KEY || "",
   },
-  turso: {
-    TURSO_AUTH_TOKEN: process.env.TURSO_AUTH_TOKEN || "",
-    TURSO_DATABASE_URL: process.env.TURSO_DATABASE_URL || "",
-  },
 };

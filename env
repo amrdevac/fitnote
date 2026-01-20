@@ -10,12 +10,3 @@ NEXT_PUBLIC_IMAGEKIT_PUBLIC_KEY=public_S9lamHXAiU3yXY6g1WunuiqmMtU=
 ## NextAuth
 NEXTAUTH_SECRET=change-me-to-a-long-random-string
 NEXTAUTH_URL=http://localhost:3321
-
-## Turso / libsql
-# Remote Turso/libsql connection
-TURSO_DATABASE_URL=libsql://your-database.aws-region.turso.io
-TURSO_AUTH_TOKEN=replace-with-token
-
-# Contoh koneksi lokal
-# TURSO_DATABASE_URL=libsql://127.0.0.1:8082/
-# TURSO_AUTH_TOKEN=local

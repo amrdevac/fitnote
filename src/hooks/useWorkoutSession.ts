@@ -1,8 +1,9 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { movementOptions, seedSessions } from "@/data/workouts";
+import { useEffect, useMemo, useState } from "react";
+import { movementOptions } from "@/data/workouts";
 import { MovementOption, WorkoutMovement, WorkoutSession, WorkoutSet } from "@/types/workout";
+import workoutsDb from "@/lib/indexedDb/workout";
 
 type WorkoutInputs = {
   weight: string;
@@ -22,17 +23,96 @@ const initialInputs: WorkoutInputs = {
   rest: "",
 };
 
+type BuilderDraft = {
+  inputs: WorkoutInputs;
+  currentMovementId: string;
+  currentSets: WorkoutSet[];
+  stagedMovements: WorkoutMovement[];
+};
+
 const uniqueId = () => `${Date.now()}-${Math.random().toString(16).slice(2)}`;
 
 const useWorkoutSession = () => {
-  const [sessions, setSessions] = useState<WorkoutSession[]>(seedSessions);
+  const [sessions, setSessions] = useState<WorkoutSession[]>([]);
   const [movementLibrary, setMovementLibrary] = useState(movementOptions);
-  const [currentMovementId, setCurrentMovementId] = useState<string>(
-    movementLibrary[0]?.id ?? ""
-  );
+  const [currentMovementId, setCurrentMovementId] = useState<string>("");
   const [inputs, setInputs] = useState<WorkoutInputs>(initialInputs);
   const [currentSets, setCurrentSets] = useState<WorkoutSet[]>([]);
   const [stagedMovements, setStagedMovements] = useState<WorkoutMovement[]>([]);
+  const [isInitialized, setIsInitialized] = useState(false);
+  const draftKey = "fitnote-builder-draft";
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    let cancelled = false;
+    async function hydrateFromDb() {
+      try {
+        const [storedSessions, storedMovements] = await Promise.all([
+          workoutsDb.getSessions(),
+          workoutsDb.getMovementOptions(),
+        ]);
+        if (cancelled) return;
+
+        setSessions(storedSessions);
+        const nextMovements: MovementOption[] = storedMovements.length
+          ? storedMovements
+          : movementOptions;
+        if (!storedMovements.length) {
+          await workoutsDb.replaceMovementLibrary(nextMovements);
+        }
+
+        let draft: BuilderDraft | null = null;
+        if (typeof window !== "undefined") {
+          const raw = window.localStorage.getItem(draftKey);
+          if (raw) {
+            try {
+              draft = JSON.parse(raw) as BuilderDraft;
+            } catch {
+              draft = null;
+            }
+          }
+        }
+
+        if (cancelled) return;
+        setMovementLibrary(nextMovements);
+
+        const movementExists = (id: string) =>
+          nextMovements.some((movement) => movement.id === id);
+        const draftMovementId =
+          draft?.currentMovementId && movementExists(draft.currentMovementId)
+            ? draft.currentMovementId
+            : nextMovements[0]?.id ?? "";
+
+        setCurrentMovementId(draftMovementId);
+        if (draft) {
+          setInputs(draft.inputs ?? initialInputs);
+          setCurrentSets(draft.currentSets ?? []);
+          setStagedMovements(draft.stagedMovements ?? []);
+        }
+      } catch (error) {
+        console.error("Failed to hydrate workout data from IndexedDB", error);
+      } finally {
+        if (!cancelled) {
+          setIsInitialized(true);
+        }
+      }
+    }
+    hydrateFromDb();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!isInitialized || typeof window === "undefined") return;
+    const draft: BuilderDraft = {
+      inputs,
+      currentMovementId,
+      currentSets,
+      stagedMovements,
+    };
+    window.localStorage.setItem(draftKey, JSON.stringify(draft));
+  }, [inputs, currentMovementId, currentSets, stagedMovements, isInitialized]);
 
   function updateInput(field: keyof WorkoutInputs, value: string) {
     setInputs((prev) => ({ ...prev, [field]: value }));
@@ -98,7 +178,7 @@ const useWorkoutSession = () => {
     setStagedMovements((prev) => prev.filter((movement) => movement.id !== id));
   }
 
-  function saveSession(): ActionResult<WorkoutSession> {
+  async function saveSession(): Promise<ActionResult<WorkoutSession>> {
     if (!stagedMovements.length) {
       return { success: false, error: "Tambahkan minimal satu gerakan." };
     }
@@ -107,15 +187,28 @@ const useWorkoutSession = () => {
       createdAt: new Date().toISOString(),
       movements: stagedMovements,
     };
-    setSessions((prev) => [newSession, ...prev]);
-    setStagedMovements([]);
-    clearCurrentSets();
-    return { success: true, data: newSession };
+    try {
+      const next = [newSession, ...sessions];
+      await workoutsDb.saveSession(newSession);
+      setSessions(next);
+      setStagedMovements([]);
+      clearCurrentSets();
+      if (typeof window !== "undefined") {
+        window.localStorage.removeItem(draftKey);
+      }
+      return { success: true, data: newSession };
+    } catch (error) {
+      console.error("Failed to persist sessions", error);
+      return { success: false, error: "Gagal menyimpan ke IndexedDB." };
+    }
   }
 
   function resetBuilder() {
     clearCurrentSets();
     setStagedMovements([]);
+    if (typeof window !== "undefined") {
+      window.localStorage.removeItem(draftKey);
+    }
   }
 
   function addCustomMovement(name: string): ActionResult<MovementOption> {
@@ -134,7 +227,13 @@ const useWorkoutSession = () => {
       name: trimmed,
       description: "Gerakan kustom",
     };
-    setMovementLibrary((prev) => [...prev, customMovement]);
+    setMovementLibrary((prev) => {
+      const next = [...prev, customMovement];
+      workoutsDb
+        .replaceMovementLibrary(next)
+        .catch((error) => console.error("Failed to persist movement library", error));
+      return next;
+    });
     return { success: true, data: customMovement };
   }
 
@@ -155,6 +254,7 @@ const useWorkoutSession = () => {
     saveSession,
     resetBuilder,
     addCustomMovement,
+    isInitialized,
   };
 };
 

@@ -1,10 +1,6 @@
-import { Metadata } from "next";
-import MobileWorkoutHome from "@/components/workouts/MobileWorkoutHome";
+'use client';
 
-export const metadata: Metadata = {
-  title: "FitNote – Tracker Harian",
-  description: "Catat set latihan lewat UI mobile dengan gesture swipe kiri dan tombol plus.",
-};
+import MobileWorkoutHome from "@/components/workouts/MobileWorkoutHome";
 
 export default function Home() {
   return (
