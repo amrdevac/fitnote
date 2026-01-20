@@ -2,15 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import {
-  ArrowLeftIcon,
-  PlusIcon,
-  Trash2Icon,
-  TimerResetIcon,
-  HourglassIcon,
-  CopyIcon,
-  ArrowRightIcon,
-} from "lucide-react";
+import { PlusIcon, Trash2Icon, TimerResetIcon, HourglassIcon, CopyIcon, ArrowRightIcon } from "lucide-react";
 import { Button } from "@/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/ui/card";
 import { Input } from "@/ui/input";

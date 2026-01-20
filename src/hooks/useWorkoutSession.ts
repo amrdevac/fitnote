@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { movementOptions } from "@/data/workouts";
 import { MovementOption, WorkoutMovement, WorkoutSession, WorkoutSet } from "@/types/workout";
 import workoutsDb from "@/lib/indexedDb/workout";

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ExerciseTimer, TimerSegment } from "@/types/timer";
+import { ExerciseTimer } from "@/types/timer";
 import timersDb from "@/lib/indexedDb/timers";
 
 const uniqueId = () => `${Date.now()}-${Math.random().toString(16).slice(2)}`;

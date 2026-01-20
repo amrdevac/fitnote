@@ -5,12 +5,12 @@ import { STORE_NAMES, runStoreRequest, runStoreTransaction } from "./base";
 
 const timersDb = {
   async getTimers(): Promise<ExerciseTimer[]> {
-    const rows = await runStoreRequest<ExerciseTimer[] | undefined>(
+    const rows = await runStoreRequest<ExerciseTimer[]>(
       STORE_NAMES.timers,
       "readonly",
       (store) => store.getAll()
     );
-    return (rows ?? []).map((timer) => ({ ...timer }));
+    return rows.map((timer) => ({ ...timer }));
   },
 
   async saveTimer(timer: ExerciseTimer) {
