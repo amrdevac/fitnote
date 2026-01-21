@@ -1,0 +1,8 @@
+[{
+      "relation": ["delegate_permission/common.handle_all_urls"],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "app.vercel.fitnotes_seven.twa",
+        "sha256_cert_fingerprints": ["61:70:1F:3C:FB:24:78:46:03:6C:3A:CD:CF:35:E1:0D:69:6E:80:9D:F9:C7:4B:6E:72:38:E9:DF:B4:1F:3A:E8"]
+      }
+    }]
