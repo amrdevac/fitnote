@@ -1,3 +1,4 @@
+import { getDefaultSessionTitle } from "@/lib/sessionTitle";
 import { MovementOption, WorkoutSession } from "@/types/workout";
 
 export const movementOptions: MovementOption[] = [
@@ -32,6 +33,7 @@ export const seedSessions: WorkoutSession[] = [
   {
     id: "session-seed-1",
     createdAt: "2024-06-01T06:00:00.000Z",
+    title: getDefaultSessionTitle("2024-06-01T06:00:00.000Z"),
     movements: [
       {
         id: "movement-seed-1",
@@ -54,6 +56,7 @@ export const seedSessions: WorkoutSession[] = [
   {
     id: "session-seed-2",
     createdAt: "2024-05-31T06:00:00.000Z",
+    title: getDefaultSessionTitle("2024-05-31T06:00:00.000Z"),
     movements: [
       {
         id: "movement-seed-3",

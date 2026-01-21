@@ -5,6 +5,8 @@ import type {
   CSSProperties,
   PointerEvent as ReactPointerEvent,
   MouseEvent as ReactMouseEvent,
+  KeyboardEvent as ReactKeyboardEvent,
+  ChangeEvent as ReactChangeEvent,
 } from "react";
 import { useRouter } from "next/navigation";
 import { PlusIcon, ChevronDown, LayersIcon, Repeat2Icon, ScaleIcon, TimerIcon, CheckIcon } from "lucide-react";
@@ -12,6 +14,7 @@ import { Card, CardDescription, CardHeader, CardTitle } from "@/ui/card";
 import { Button } from "@/ui/button";
 import useWorkoutSession from "@/hooks/useWorkoutSession";
 import type { WorkoutMovement } from "@/types/workout";
+import { getDefaultSessionTitle } from "@/lib/sessionTitle";
 
 function formatDate(dateIso: string) {
   const formatter = new Intl.DateTimeFormat("id-ID", {
@@ -53,6 +56,13 @@ const MobileWorkoutHome = () => {
   const sheetAnimationTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
   const selectionTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const selectionTriggeredRef = useRef(false);
+  const sessionRefs = useRef<Record<string, HTMLDivElement | null>>({});
+  const [scrollTargetSession, setScrollTargetSession] = useState<string | null>(null);
+  const scrollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [editingSessionId, setEditingSessionId] = useState<string | null>(null);
+  const [editingTitle, setEditingTitle] = useState("");
+  const [isRenamingTitle, setIsRenamingTitle] = useState(false);
+  const titleInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     if (typeof document === "undefined") return;
@@ -81,6 +91,14 @@ const MobileWorkoutHome = () => {
   }, []);
 
   useEffect(() => {
+    return () => {
+      if (scrollTimeoutRef.current) {
+        clearTimeout(scrollTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  useEffect(() => {
     if (typeof document === "undefined" || !isSheetMounted) return;
     const { style } = document.body;
     const previousOverflow = style.overflow;
@@ -102,15 +120,20 @@ const MobileWorkoutHome = () => {
   };
 
   const toggleSession = (sessionId: string) => {
+    let willExpand = false;
     setExpandedSessions((prev) => {
       const next = new Set(prev);
       if (next.has(sessionId)) {
         next.delete(sessionId);
       } else {
         next.add(sessionId);
+        willExpand = true;
       }
       return next;
     });
+    if (willExpand) {
+      setScrollTargetSession(sessionId);
+    }
   };
 
   function handleTouchStart(event: React.TouchEvent<HTMLDivElement>) {
@@ -347,6 +370,76 @@ const MobileWorkoutHome = () => {
     paddingTop: isSelectionMode ? "3.5rem" : undefined,
   };
 
+  useEffect(() => {
+    if (scrollTimeoutRef.current) {
+      clearTimeout(scrollTimeoutRef.current);
+      scrollTimeoutRef.current = null;
+    }
+    if (!scrollTargetSession) return;
+    const targetId = scrollTargetSession;
+    scrollTimeoutRef.current = setTimeout(() => {
+      const node = sessionRefs.current[targetId];
+      if (node) {
+        node.scrollIntoView({ behavior: "smooth", block: "center" });
+      }
+      scrollTimeoutRef.current = null;
+      setScrollTargetSession(null);
+    }, 220);
+  }, [scrollTargetSession]);
+
+  useEffect(() => {
+    if (editingSessionId && titleInputRef.current) {
+      titleInputRef.current.focus();
+      titleInputRef.current.select();
+      return;
+    }
+    if (!editingSessionId) {
+      titleInputRef.current = null;
+    }
+  }, [editingSessionId]);
+
+  const startEditingTitle = (sessionId: string, currentTitle: string) => {
+    if (isSelectionMode) return;
+    setEditingSessionId(sessionId);
+    setEditingTitle(currentTitle);
+  };
+
+  const handleTitleChange = (event: ReactChangeEvent<HTMLInputElement>) => {
+    setEditingTitle(event.target.value);
+  };
+
+  const finishEditingTitleState = () => {
+    setEditingSessionId(null);
+    setEditingTitle("");
+    setIsRenamingTitle(false);
+  };
+
+  const commitEditingTitle = async () => {
+    if (!editingSessionId || isRenamingTitle) return;
+    setIsRenamingTitle(true);
+    const result = await workoutSession.renameSession(editingSessionId, editingTitle);
+    if (result.success) {
+      finishEditingTitleState();
+    } else {
+      setIsRenamingTitle(false);
+      if (titleInputRef.current) {
+        titleInputRef.current.focus();
+        titleInputRef.current.select();
+      }
+    }
+  };
+
+  const handleTitleKeyDown = (event: ReactKeyboardEvent<HTMLInputElement>) => {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      void commitEditingTitle();
+    }
+  };
+
+  const handleTitleBlur = () => {
+    void commitEditingTitle();
+  };
+
   return (
     <div
       className="select-none relative z-0 mx-auto flex min-h-dvh w-full max-w-md flex-col bg-slate-50 pb-24 overflow-hidden overscroll-none"
@@ -399,7 +492,7 @@ const MobileWorkoutHome = () => {
         </header>
         
 
-        <div className="flex flex-1 flex-col gap-4 px-4">
+        <div className="flex flex-1 flex-col gap-4 px-4 overflow-y-auto min-h-0">
           {visibleSessions.length === 0 && (
             <div className="rounded-2xl border border-dashed border-slate-300 bg-white/80 px-5 py-10 text-center text-sm text-slate-500">
               Catatan masih kosong. Tap tombol tambah atau swipe ke kiri untuk memulai.
@@ -413,6 +506,8 @@ const MobileWorkoutHome = () => {
               const isExpanded = expandedSessions.has(session.id);
               const isSelected = selectedSessions.has(session.id);
               const sessionLabel = formatDate(session.createdAt);
+              const sessionTitle = session.title ?? getDefaultSessionTitle(session.createdAt);
+              const isEditingTitle = editingSessionId === session.id;
               const totalSets = session.movements.reduce(
                 (acc, movement) => acc + movement.sets.length,
                 0
@@ -420,7 +515,10 @@ const MobileWorkoutHome = () => {
               return (
                 <Card
                   key={session.id}
-                  className={`relative border ${isSelected ? "border-slate-900 ring-2 ring-slate-900/20" : "border-slate-200"} bg-white shadow-sm transition`}
+                  ref={(node) => {
+                    sessionRefs.current[session.id] = node;
+                  }}
+                  className={`relative border ${isSelected ? "border-slate-900 ring-2 ring-slate-900/20" : "border-slate-200"} bg-white shadow-sm transition scroll-mt-24`}
                   onPointerDown={(event) => handleCardPointerDown(session.id, event)}
                   onPointerUp={handleCardPointerUp}
                   onPointerLeave={handleCardPointerLeave}
@@ -442,7 +540,33 @@ const MobileWorkoutHome = () => {
                   <CardHeader>
                     <div className="flex items-center justify-between">
                       <div>
-                        <CardTitle className="text-base">{sessionLabel}</CardTitle>
+                        {isEditingTitle ? (
+                          <input
+                            ref={(node) => {
+                              if (isEditingTitle) {
+                                titleInputRef.current = node;
+                              }
+                            }}
+                            type="text"
+                            value={editingTitle}
+                            onChange={handleTitleChange}
+                            onBlur={handleTitleBlur}
+                            onKeyDown={handleTitleKeyDown}
+                            disabled={isRenamingTitle}
+                            className="w-full rounded-lg border border-slate-200 bg-white/70 px-2 py-1 text-base font-semibold text-slate-900 outline-none focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
+                          />
+                        ) : (
+                          <CardTitle
+                            className="text-base"
+                            onDoubleClick={(event) => {
+                              event.stopPropagation();
+                              startEditingTitle(session.id, sessionTitle);
+                            }}
+                          >
+                            {sessionTitle}
+                          </CardTitle>
+                        )}
+                        <p className="text-xs text-slate-400">{sessionLabel}</p>
                         <CardDescription>
                           {session.movements.length} gerakan · {totalSets} set
                         </CardDescription>
@@ -452,7 +576,7 @@ const MobileWorkoutHome = () => {
                   </CardHeader>
                   <div className="relative px-4 pb-4">
                     <div
-                      className={`space-y-3 overflow-hidden transition-all duration-300 ${isExpanded ? "max-h-[600px] opacity-100" : "max-h-[140px] opacity-80"
+                      className={`space-y-3 transition-all duration-300 ${isExpanded ? "max-h-[360px] overflow-y-auto pr-1 opacity-100" : "max-h-[140px] overflow-hidden opacity-80"
                         }`}
                     >
                       {session.movements.map((movement) => {

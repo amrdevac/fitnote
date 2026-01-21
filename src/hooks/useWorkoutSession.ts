@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { movementOptions } from "@/data/workouts";
 import { MovementOption, WorkoutMovement, WorkoutSession, WorkoutSet } from "@/types/workout";
+import { getDefaultSessionTitle } from "@/lib/sessionTitle";
 import workoutsDb from "@/lib/indexedDb/workout";
 
 type WorkoutInputs = {
@@ -42,6 +43,17 @@ const useWorkoutSession = () => {
   const [isInitialized, setIsInitialized] = useState(false);
   const draftKey = "fitnote-builder-draft";
 
+  const ensureSessionTitle = (session: WorkoutSession): WorkoutSession => {
+    const normalizedTitle = session.title?.trim();
+    if (normalizedTitle?.length) {
+      if (normalizedTitle === session.title) {
+        return session;
+      }
+      return { ...session, title: normalizedTitle };
+    }
+    return { ...session, title: getDefaultSessionTitle(session.createdAt) };
+  };
+
   useEffect(() => {
     if (typeof window === "undefined") return;
     let cancelled = false;
@@ -53,7 +65,17 @@ const useWorkoutSession = () => {
         ]);
         if (cancelled) return;
 
-        setSessions(storedSessions);
+        const normalizedSessions = storedSessions.map((session) => ensureSessionTitle(session));
+        setSessions(normalizedSessions);
+        normalizedSessions.forEach((session, index) => {
+          const original = storedSessions[index];
+          if (!original) return;
+          if (session.title !== original.title) {
+            workoutsDb
+              .saveSession(session)
+              .catch((error) => console.error("Failed to backfill session title", error));
+          }
+        });
         const nextMovements: MovementOption[] = storedMovements.length
           ? storedMovements
           : movementOptions;
@@ -182,9 +204,11 @@ const useWorkoutSession = () => {
     if (!stagedMovements.length) {
       return { success: false, error: "Tambahkan minimal satu gerakan." };
     }
+    const createdAt = new Date().toISOString();
     const newSession: WorkoutSession = {
       id: uniqueId(),
-      createdAt: new Date().toISOString(),
+      createdAt,
+      title: getDefaultSessionTitle(createdAt),
       movements: stagedMovements,
     };
     try {
@@ -218,6 +242,31 @@ const useWorkoutSession = () => {
     } catch (error) {
       console.error("Failed to archive sessions", error);
       setSessions(sessions);
+    }
+  }
+
+  async function renameSession(sessionId: string, nextTitle: string): Promise<ActionResult> {
+    const targetSession = sessions.find((session) => session.id === sessionId);
+    if (!targetSession) {
+      return { success: false, error: "Sesi tidak ditemukan." };
+    }
+    const trimmed = nextTitle.trim();
+    const normalized = trimmed.length ? trimmed : getDefaultSessionTitle(targetSession.createdAt);
+    if (targetSession.title === normalized) {
+      return { success: true };
+    }
+    const updatedSession: WorkoutSession = { ...targetSession, title: normalized };
+    const previousSessions = sessions;
+    setSessions((prev) =>
+      prev.map((session) => (session.id === sessionId ? updatedSession : session))
+    );
+    try {
+      await workoutsDb.saveSession(updatedSession);
+      return { success: true, data: updatedSession };
+    } catch (error) {
+      console.error("Failed to rename session", error);
+      setSessions(previousSessions);
+      return { success: false, error: "Gagal menyimpan judul sesi." };
     }
   }
 
@@ -274,6 +323,7 @@ const useWorkoutSession = () => {
     addCustomMovement,
     isInitialized,
     archiveSessions,
+    renameSession,
   };
 };
 

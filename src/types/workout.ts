@@ -14,6 +14,7 @@ export type WorkoutMovement = {
 export type WorkoutSession = {
   id: string;
   createdAt: string;
+  title?: string;
   movements: WorkoutMovement[];
   archivedAt?: string;
 };
