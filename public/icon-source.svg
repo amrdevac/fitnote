@@ -1,0 +1,20 @@
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#6046F9"/>
+      <stop offset="100%" stop-color="#4634D4"/>
+    </linearGradient>
+    <linearGradient id="waveGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#5BE7D8"/>
+      <stop offset="100%" stop-color="#6CD2FF"/>
+    </linearGradient>
+  </defs>
+  <rect x="96" y="96" width="320" height="320" rx="140" ry="140" transform="rotate(45 256 256)" fill="url(#bgGradient)"/>
+  <path d="M192 132h120l56 56v188c0 22-18 40-40 40H192c-22 0-40-18-40-40V172c0-22 18-40 40-40z" fill="none" stroke="#E9F1FF" stroke-width="18" stroke-linejoin="round"/>
+  <path d="M312 132v48h48" fill="none" stroke="#E9F1FF" stroke-width="18" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M130 272c24-54 100-90 150-48 40 34 70 50 110 10" fill="none" stroke="url(#waveGradient)" stroke-width="20" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M130 240c-10 0-24 10-24 28s14 28 24 28" fill="none" stroke="#8CF0E5" stroke-width="14" stroke-linecap="round"/>
+  <path d="M382 240c10 0 24 10 24 28s-14 28-24 28" fill="none" stroke="#8CF0E5" stroke-width="14" stroke-linecap="round"/>
+  <circle cx="440" cy="392" r="6" fill="#C4FFE2"/>
+  <circle cx="454" cy="404" r="5" fill="#7AE0B8"/>
+</svg>
