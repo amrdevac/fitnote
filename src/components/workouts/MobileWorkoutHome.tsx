@@ -9,8 +9,21 @@ import type {
   ChangeEvent as ReactChangeEvent,
 } from "react";
 import { useRouter } from "next/navigation";
-import { PlusIcon, ChevronDown, LayersIcon, Repeat2Icon, ScaleIcon, TimerIcon, CheckIcon } from "lucide-react";
-import { Card, CardDescription, CardHeader, CardTitle } from "@/ui/card";
+import {
+  PlusIcon,
+  ChevronDown,
+  LayersIcon,
+  Repeat2Icon,
+  ScaleIcon,
+  TimerIcon,
+  CheckIcon,
+  CalendarDays,
+  LayoutGrid,
+  BarChart3,
+  User2,
+  HomeIcon,
+} from "lucide-react";
+import { Card, CardHeader, CardTitle } from "@/ui/card";
 import { Button } from "@/ui/button";
 import useWorkoutSession from "@/hooks/useWorkoutSession";
 import type { WorkoutMovement } from "@/types/workout";
@@ -368,6 +381,7 @@ const MobileWorkoutHome = () => {
   const containerStyle: CSSProperties = {
     overscrollBehavior: "none",
     paddingTop: isSelectionMode ? "3.5rem" : undefined,
+    background: "linear-gradient(180deg, #F1FBF6 0%, #FFFFFF 40%)",
   };
 
   useEffect(() => {
@@ -478,21 +492,28 @@ const MobileWorkoutHome = () => {
         className={`flex grow flex-col ${isSwiping ? "" : "transition-transform duration-200"}`}
         style={{ transform: `translateX(${-clampedSwipeOffset}px)` }}
       >
-        <header className="flex flex-col gap-1 px-5 pb-4 pt-10">
-          <div>
-            <h1 className="text-3xl font-semibold text-slate-900">FitNote</h1>
-            <p className="text-sm text-slate-500">
-              Catat gerakan dan set lewat halaman form khusus. Geser ke kiri untuk membuka builder,
-              geser ke kanan untuk mengelola timer latihan.
-            </p>
-            <p className="text-xs text-slate-400">
-              {visibleSessions.length} sesi · {totalMovements} gerakan
-            </p>
+        <header className="px-5 pb-6 pt-10">
+          <div className="flex items-start justify-between">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-emerald-600">
+                Consistency is key
+              </p>
+              <h1 className="mt-1 text-4xl font-semibold text-slate-900">Activity</h1>
+              <p className="mt-2 text-sm text-slate-500">
+                {visibleSessions.length} sesi · {totalMovements} gerakan
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => router.push("/calendar")}
+              className="inline-flex size-12 items-center justify-center rounded-2xl bg-white text-slate-600 shadow-lg shadow-emerald-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-200"
+            >
+              <CalendarDays className="size-5" />
+            </button>
           </div>
         </header>
-        
 
-        <div className="flex flex-1 flex-col gap-4 px-4 overflow-y-auto min-h-0">
+        <div className="flex flex-1 flex-col gap-5 px-4 overflow-y-auto min-h-0 pb-12">
           {visibleSessions.length === 0 && (
             <div className="rounded-2xl border border-dashed border-slate-300 bg-white/80 px-5 py-10 text-center text-sm text-slate-500">
               Catatan masih kosong. Tap tombol tambah atau swipe ke kiri untuk memulai.
@@ -512,13 +533,25 @@ const MobileWorkoutHome = () => {
                 (acc, movement) => acc + movement.sets.length,
                 0
               );
+              const accentPalette = ["#fb7185", "#38bdf8", "#a78bfa", "#34d399"];
+              const accentColor = accentPalette[session.movements.length % accentPalette.length];
+              const totalRestSeconds = session.movements.reduce(
+                (restAcc, movement) =>
+                  restAcc + movement.sets.reduce((setAcc, set) => setAcc + set.rest, 0),
+                0
+              );
+              const estimatedDuration = Math.max(
+                1,
+                Math.round(totalRestSeconds / 60) + session.movements.length * 2
+              );
               return (
                 <Card
                   key={session.id}
                   ref={(node) => {
                     sessionRefs.current[session.id] = node;
                   }}
-                  className={`relative border ${isSelected ? "border-slate-900 ring-2 ring-slate-900/20" : "border-slate-200"} bg-white shadow-sm transition scroll-mt-24`}
+                  className={`relative scroll-mt-24 rounded-[32px] border-0 bg-white/95 shadow-[0_30px_60px_rgba(15,23,42,0.12)] transition ${isSelected ? "ring-2 ring-slate-900/20" : ""
+                    }`}
                   onPointerDown={(event) => handleCardPointerDown(session.id, event)}
                   onPointerUp={handleCardPointerUp}
                   onPointerLeave={handleCardPointerLeave}
@@ -532,14 +565,21 @@ const MobileWorkoutHome = () => {
                 >
                   {isSelectionMode && (
                     <div
-                      className={`absolute right-3 top-3 flex h-6 w-6 items-center justify-center rounded-full border text-white ${isSelected ? "border-slate-900 bg-slate-900" : "border-slate-300 bg-white text-slate-400"}`}
+                      className={`absolute right-4 top-4 flex h-7 w-7 items-center justify-center rounded-full border text-white ${isSelected
+                        ? "border-slate-900 bg-slate-900"
+                        : "border-slate-200 bg-white text-slate-400"
+                        }`}
                     >
                       {isSelected && <CheckIcon className="size-4" />}
                     </div>
                   )}
-                  <CardHeader>
-                    <div className="flex items-center justify-between">
+                  <CardHeader className="pb-2 pt-6">
+                    <div className="flex items-start justify-between">
                       <div>
+                        <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-emerald-500">
+                          <span className="size-3 rounded-full bg-emerald-400" />
+                          Active
+                        </div>
                         {isEditingTitle ? (
                           <input
                             ref={(node) => {
@@ -553,11 +593,11 @@ const MobileWorkoutHome = () => {
                             onBlur={handleTitleBlur}
                             onKeyDown={handleTitleKeyDown}
                             disabled={isRenamingTitle}
-                            className="w-full rounded-lg border border-slate-200 bg-white/70 px-2 py-1 text-base font-semibold text-slate-900 outline-none focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
+                            className="mt-2 w-full rounded-2xl border border-slate-200 bg-white/70 px-3 py-2 text-2xl font-semibold text-slate-900 outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100"
                           />
                         ) : (
                           <CardTitle
-                            className="text-base"
+                            className="mt-2 text-2xl font-semibold"
                             onDoubleClick={(event) => {
                               event.stopPropagation();
                               startEditingTitle(session.id, sessionTitle);
@@ -566,20 +606,23 @@ const MobileWorkoutHome = () => {
                             {sessionTitle}
                           </CardTitle>
                         )}
-                        <p className="text-xs text-slate-400">{sessionLabel}</p>
-                        <CardDescription>
-                          {session.movements.length} gerakan · {totalSets} set
-                        </CardDescription>
+                        <p className="text-sm text-slate-400">
+                          {sessionLabel} · {estimatedDuration} mnt
+                        </p>
                       </div>
-
+                      <div className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-emerald-600">
+                        {session.movements.length} gerakan
+                      </div>
                     </div>
                   </CardHeader>
-                  <div className="relative px-4 pb-4">
+                  <div className="relative px-5 pb-6 ">
                     <div
-                      className={`space-y-3 transition-all duration-300 ${isExpanded ? "max-h-[360px] overflow-y-auto pr-1 opacity-100" : "max-h-[140px] overflow-hidden opacity-80"
+                      className={`space-y-4 transition-all p-1   duration-300 ${isExpanded
+                        ? "max-h-[420px] overflow-y-auto pr-1 opacity-100"
+                        : "max-h-[220px] overflow-hidden opacity-90"
                         }`}
                     >
-                      {session.movements.map((movement) => {
+                      {session.movements.map((movement, movementIndex) => {
                         const totalReps = movement.sets.reduce((acc, set) => acc + set.reps, 0);
                         const totalRest = movement.sets.reduce((acc, set) => acc + set.rest, 0);
                         const consistentWeight = movement.sets.every(
@@ -600,10 +643,10 @@ const MobileWorkoutHome = () => {
                           : `${minWeight}-${maxWeight}kg`;
 
                         const summaryItems = [
-                          { label: "Set", value: movement.sets.length, icon: LayersIcon },
+                          { label: "Sets", value: movement.sets.length, icon: LayersIcon },
                           { label: "Reps", value: totalReps, icon: Repeat2Icon },
-                          { label: "Beban", value: weightRangeLabel, icon: ScaleIcon },
-                          { label: "Rest", value: `${totalRest} dtk`, icon: TimerIcon },
+                          { label: "Weight", value: weightRangeLabel, icon: ScaleIcon },
+                          { label: "Rest", value: `${totalRest}s`, icon: TimerIcon },
                         ];
 
                         const handleMovementClick = (
@@ -620,7 +663,7 @@ const MobileWorkoutHome = () => {
                         return (
                           <div
                             key={movement.id}
-                            className="rounded-2xl bg-slate-100 px-4 py-3 text-slate-700 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 transition-transform duration-150 active:scale-95"
+                            className="cursor-pointer rounded-3xl bg-white/90 p-3  shadow-[0_5px_10px_rgba(15,23,42,0.08)] ring-1 ring-slate-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400"
                             role="button"
                             tabIndex={0}
                             onClick={(event) => handleMovementClick(event)}
@@ -635,39 +678,63 @@ const MobileWorkoutHome = () => {
                               }
                             }}
                           >
-                            <p className="text-sm font-medium">{movement.name}</p>
-                            <div className="mt-2 grid grid-cols-2 gap-2 text-xs text-slate-500">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-3">
+                                <span
+                                  className="inline-flex h-10 w-1 rounded-full"
+                                  style={{
+                                    backgroundColor:
+                                      movementIndex === 0 ? "#fb923c" : accentColor,
+                                  }}
+                                />
+                                <p className="text-lg font-semibold text-slate-900">
+                                  {movement.name}
+                                </p>
+                              </div>
+                            </div>
+                            <div className="mt-4 grid grid-cols-2 gap-3 text-xs text-slate-500 sm:grid-cols-4">
                               {summaryItems.map(({ label, value, icon: Icon }) => (
                                 <div
                                   key={label}
-                                  className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white/80 px-2.5 py-2"
+                                  className="flex items-center gap-3 rounded-2xl border border-slate-100 bg-slate-50/80 px-3 py-3"
                                 >
-                                  <div className="flex size-7 items-center justify-center rounded-lg bg-slate-100 text-slate-600">
+                                  <div className="flex size-10 items-center justify-center rounded-2xl bg-white text-slate-600 shadow-inner">
                                     <Icon className="size-4" />
                                   </div>
                                   <div className="leading-tight">
-                                    <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">
+                                    <p className="text-[11px] uppercase tracking-wide text-slate-400">
                                       {label}
                                     </p>
-                                    <p className="text-sm font-semibold text-slate-700">{value}</p>
+                                    <p className="text-base font-semibold text-slate-800">
+                                      {value}
+                                    </p>
                                   </div>
                                 </div>
                               ))}
                             </div>
                             {showLevelUp && (
-                              <p className="mt-2 inline-flex items-center gap-1 text-[11px] font-semibold text-amber-600">
-                                <span className="inline-flex h-4 w-4 items-center justify-center rounded-full bg-amber-500/20 text-[10px] font-bold text-amber-700">
-                                  ↑
-                                </span>
-                                Level Up
-                              </p>
+                              <div className="mt-5 rounded-3xl bg-gradient-to-r from-indigo-500 via-blue-500 to-sky-400 p-[1px]">
+                                <div className="rounded-3xl bg-gradient-to-r from-indigo-500/80 to-sky-500/80 p-4 text-sm text-white">
+                                  <p className="text-[11px] uppercase tracking-wide text-white/80">
+                                    Level up suggestion
+                                  </p>
+                                  <p className="mt-1 text-lg font-semibold">
+                                    Tambah +2.5kg di set berikutnya
+                                  </p>
+                                  <div className="mt-4 flex items-center justify-between">
+                                    <p className="text-xs text-white/70">
+                                      Konsistensi bikin progres naik.
+                                    </p>
+                                  </div>
+                                </div>
+                              </div>
                             )}
                           </div>
                         );
                       })}
                     </div>
                     {!isExpanded && (
-                      <div className="pointer-events-none absolute inset-x-4 bottom-12 h-32 bg-gradient-to-t from-white to-transparent" />
+                      <div className="pointer-events-none absolute inset-x-5 bottom-12 h-24 bg-gradient-to-t from-white to-transparent" />
                     )}
                     <div className="mt-4 flex justify-center">
                       <Button
@@ -698,17 +765,33 @@ const MobileWorkoutHome = () => {
         </div>
       </div>
 
-      <div className="fixed bottom-5 right-0 justify-end pb-6 pr-6">
-          <div className="pointer-events-auto">
-            <Button
-              size="icon"
-              className="h-14 w-14 rounded-full bg-slate-900 text-white shadow-[0_20px_40px_rgba(15,23,42,0.25)]"
-              onClick={openBuilder}
-            >
-              <PlusIcon className="size-6" />
-            </Button>
+      <div className="pointer-events-none fixed inset-x-0 bottom-0 z-30 flex flex-col items-center gap-6 pb-8 pt-4">
+        <div className="pointer-events-auto absolute right-5 bottom-28">
+          <Button
+            size="icon"
+            className="h-16 w-16 rounded-full bg-indigo-600 text-white shadow-[0_30px_60px_rgba(79,70,229,0.35)]"
+            onClick={openBuilder}
+          >
+            <PlusIcon className="size-6" />
+          </Button>
+        </div>
+        <div className="pointer-events-auto flex w-[92%] max-w-md items-center justify-between rounded-[30px] bg-white px-8 py-3 text-[11px] font-semibold uppercase tracking-wide text-slate-400 shadow-[0_20px_45px_rgba(15,23,42,0.12)]">
+
+          <div className="flex flex-col items-center gap-1">
+            <TimerIcon className="size-5" />
+            Timer
+          </div>
+          <div className="flex flex-col items-center gap-1 text-indigo-600">
+            <HomeIcon className="size-5" />
+            Home
+          </div>
+          <div className="flex flex-col items-center gap-1">
+            <User2 className="size-5" />
+            Profile
           </div>
         </div>
+
+      </div>
 
       {isSheetMounted && activeMovement && (
         <div
