@@ -7,6 +7,23 @@ type ManifestWithSplash = MetadataRoute.Manifest & {
     type: string;
     form_factor?: "narrow" | "wide";
   }>;
+  screenshots?: Array<{
+    src: string;
+    sizes: string;
+    type: string;
+    form_factor?: "narrow" | "wide";
+  }>;
+  shortcuts?: Array<{
+    name: string;
+    short_name: string;
+    description: string;
+    url: string;
+    icons?: Array<{
+      src: string;
+      sizes: string;
+      type: string;
+    }>;
+  }>;
 };
 
 export default function manifest(): ManifestWithSplash {
@@ -16,6 +33,7 @@ export default function manifest(): ManifestWithSplash {
     description: "Catat dan pantau gerakan gym harian langsung dari perangkat mobile.",
     start_url: "/",
     display: "standalone",
+    orientation: "portrait",
     background_color: "#0f172a",
     theme_color: "#0f172a",
     icons: [
@@ -54,6 +72,42 @@ export default function manifest(): ManifestWithSplash {
         sizes: "402x874",
         type: "image/png",
         form_factor: "wide",
+      },
+    ],
+    screenshots: [
+      {
+        src: "/splash_screen.png",
+        sizes: "402x874",
+        type: "image/png",
+        form_factor: "narrow",
+      },
+    ],
+    shortcuts: [
+      {
+        name: "Catat Sesi Baru",
+        short_name: "Builder",
+        description: "Buka form pengelolaan aktivitas untuk mencatat set latihan.",
+        url: "/builder",
+        icons: [
+          {
+            src: "/icon-192.png",
+            sizes: "96x96",
+            type: "image/png",
+          },
+        ],
+      },
+      {
+        name: "Kelola Timer",
+        short_name: "Timers",
+        description: "Langsung ke halaman pengatur timer latihan.",
+        url: "/timers",
+        icons: [
+          {
+            src: "/icon-192.png",
+            sizes: "96x96",
+            type: "image/png",
+          },
+        ],
       },
     ],
   };
