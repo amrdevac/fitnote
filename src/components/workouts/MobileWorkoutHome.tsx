@@ -21,7 +21,8 @@ import {
   LayoutGrid,
   BarChart3,
   User2,
-  HomeIcon,
+  TrendingUp,
+  XIcon,
 } from "lucide-react";
 import { Card, CardHeader, CardTitle } from "@/ui/card";
 import { Button } from "@/ui/button";
@@ -48,6 +49,7 @@ type ActiveMovement = {
 const sheetAnimationDuration = 220;
 const sheetCloseThreshold = 70;
 const sheetExpandThreshold = 25;
+const setCardColors = ["#E5EEFF", "#FFE7EE", "#E8FBEF", "#FFF6DA", "#F1EAFF"];
 
 const MobileWorkoutHome = () => {
   const workoutSession = useWorkoutSession();
@@ -384,6 +386,13 @@ const MobileWorkoutHome = () => {
     background: "linear-gradient(180deg, #F1FBF6 0%, #FFFFFF 40%)",
   };
 
+  const sheetLevelUpEligible =
+    !!activeMovement &&
+    activeMovement.movement.sets.length >= 4 &&
+    activeMovement.movement.sets.every(
+      (set) => set.weight === activeMovement.movement.sets[0]?.weight
+    );
+
   useEffect(() => {
     if (scrollTimeoutRef.current) {
       clearTimeout(scrollTimeoutRef.current);
@@ -456,7 +465,7 @@ const MobileWorkoutHome = () => {
 
   return (
     <div
-      className="select-none relative z-0 mx-auto flex min-h-dvh w-full max-w-md flex-col bg-slate-50 pb-24 overflow-hidden overscroll-none"
+      className="select-none relative z-0 mx-auto flex min-h-dvh w-full max-w-md flex-col bg-slate-50  overflow-hidden overscroll-none"
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
@@ -573,46 +582,48 @@ const MobileWorkoutHome = () => {
                       {isSelected && <CheckIcon className="size-4" />}
                     </div>
                   )}
-                  <CardHeader className="pb-2 pt-6">
-                    <div className="flex items-start justify-between">
+                  <CardHeader className="pb-2 pt-4">
+                    <div className="flex items-start justify-between ">
                       <div>
                         <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-emerald-500">
                           <span className="size-3 rounded-full bg-emerald-400" />
                           Active
                         </div>
-                        {isEditingTitle ? (
-                          <input
-                            ref={(node) => {
-                              if (isEditingTitle) {
-                                titleInputRef.current = node;
-                              }
-                            }}
-                            type="text"
-                            value={editingTitle}
-                            onChange={handleTitleChange}
-                            onBlur={handleTitleBlur}
-                            onKeyDown={handleTitleKeyDown}
-                            disabled={isRenamingTitle}
-                            className="mt-2 w-full rounded-2xl border border-slate-200 bg-white/70 px-3 py-2 text-2xl font-semibold text-slate-900 outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100"
-                          />
-                        ) : (
-                          <CardTitle
-                            className="mt-2 text-2xl font-semibold"
-                            onDoubleClick={(event) => {
-                              event.stopPropagation();
-                              startEditingTitle(session.id, sessionTitle);
-                            }}
-                          >
-                            {sessionTitle}
-                          </CardTitle>
-                        )}
-                        <p className="text-sm text-slate-400">
-                          {sessionLabel} · {estimatedDuration} mnt
-                        </p>
                       </div>
                       <div className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-emerald-600">
                         {session.movements.length} gerakan
                       </div>
+                    </div>
+                    <div>
+                      {isEditingTitle ? (
+                        <input
+                          ref={(node) => {
+                            if (isEditingTitle) {
+                              titleInputRef.current = node;
+                            }
+                          }}
+                          type="text"
+                          value={editingTitle}
+                          onChange={handleTitleChange}
+                          onBlur={handleTitleBlur}
+                          onKeyDown={handleTitleKeyDown}
+                          disabled={isRenamingTitle}
+                          className="mt-2 w-full rounded-2xl border border-slate-200 bg-white/70 px-3 py-2 text-2xl font-semibold text-slate-900 outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100"
+                        />
+                      ) : (
+                        <CardTitle
+                          className="mt-2 text-2xl font-semibold"
+                          onDoubleClick={(event) => {
+                            event.stopPropagation();
+                            startEditingTitle(session.id, sessionTitle);
+                          }}
+                        >
+                          {sessionTitle}
+                        </CardTitle>
+                      )}
+                      <p className="text-sm text-slate-400">
+                        {sessionLabel} · {estimatedDuration} mnt
+                      </p>
                     </div>
                   </CardHeader>
                   <div className="relative px-5 pb-6 ">
@@ -713,19 +724,17 @@ const MobileWorkoutHome = () => {
                               ))}
                             </div>
                             {showLevelUp && (
-                              <div className="mt-5 rounded-3xl bg-gradient-to-r from-indigo-500 via-blue-500 to-sky-400 p-[1px]">
-                                <div className="rounded-3xl bg-gradient-to-r from-indigo-500/80 to-sky-500/80 p-4 text-sm text-white">
-                                  <p className="text-[11px] uppercase tracking-wide text-white/80">
+                              <div className="mt-5 rounded-[22px] bg-gradient-to-r from-indigo-500 via-blue-500 to-sky-400 p-[1px]">
+                                <div className="rounded-[22px] bg-gradient-to-r from-indigo-500/80 to-sky-500/80 px-4 py-3 text-xs text-white">
+                                  <p className="text-[9px] uppercase tracking-wide text-white/80">
                                     Level up suggestion
                                   </p>
-                                  <p className="mt-1 text-lg font-semibold">
+                                  <p className="mt-1 text-sm font-semibold">
                                     Tambah +2.5kg di set berikutnya
                                   </p>
-                                  <div className="mt-4 flex items-center justify-between">
-                                    <p className="text-xs text-white/70">
-                                      Konsistensi bikin progres naik.
-                                    </p>
-                                  </div>
+                                  <p className="mt-3 text-[11px] text-white/70">
+                                    Konsistensi bikin progres naik.
+                                  </p>
                                 </div>
                               </div>
                             )}
@@ -766,7 +775,7 @@ const MobileWorkoutHome = () => {
       </div>
 
       <div className="pointer-events-none fixed inset-x-0 bottom-0 z-30 flex flex-col items-center gap-6 pb-8 pt-4">
-        <div className="pointer-events-auto absolute right-5 bottom-28">
+        <div className="pointer-events-auto absolute right-5 bottom-5">
           <Button
             size="icon"
             className="h-16 w-16 rounded-full bg-indigo-600 text-white shadow-[0_30px_60px_rgba(79,70,229,0.35)]"
@@ -774,21 +783,6 @@ const MobileWorkoutHome = () => {
           >
             <PlusIcon className="size-6" />
           </Button>
-        </div>
-        <div className="pointer-events-auto flex w-[92%] max-w-md items-center justify-between rounded-[30px] bg-white px-8 py-3 text-[11px] font-semibold uppercase tracking-wide text-slate-400 shadow-[0_20px_45px_rgba(15,23,42,0.12)]">
-
-          <div className="flex flex-col items-center gap-1">
-            <TimerIcon className="size-5" />
-            Timer
-          </div>
-          <div className="flex flex-col items-center gap-1 text-indigo-600">
-            <HomeIcon className="size-5" />
-            Home
-          </div>
-          <div className="flex flex-col items-center gap-1">
-            <User2 className="size-5" />
-            Profile
-          </div>
         </div>
 
       </div>
@@ -801,53 +795,75 @@ const MobileWorkoutHome = () => {
           <div
             role="dialog"
             aria-modal="true"
-            className="relative z-10 flex w-full flex-col rounded-t-3xl bg-white px-5 pb-6 pt-1 shadow-2xl transition-all duration-300"
+            className="relative z-10 flex w-full flex-col rounded-t-[40px] bg-white px-6 pb-10 pt-3 shadow-[0_-20px_60px_rgba(15,23,42,0.25)] transition-all duration-300"
             style={{
               transform: `translateY(calc(${isSheetVisible ? "0%" : "100%"} + ${sheetDragOffset}px))`,
-              height: sheetSnap === "full" ? "85vh" : "55vh",
+              height: sheetSnap === "full" ? "85vh" : "60vh",
             }}
             onClick={(event) => event.stopPropagation()}
           >
             <div
-              className="sticky top-0 z-10 bg-white pb-3"
+              className="sticky top-0 z-10  pb-5"
               onTouchStart={handleSheetTouchStart}
               onTouchMove={handleSheetTouchMove}
               onTouchEnd={handleSheetTouchEnd}
             >
-              <div className="mx-auto mb-3 mt-2 h-1.5 w-12 rounded-full bg-slate-200" />
-              <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
-                {activeMovement.sessionLabel}
+              <div className="mx-auto mb-4 mt-2 h-1.5 w-16 rounded-full bg-slate-200" />
+              <p className=" text-xl font-semibold text-slate-900">
+                {activeMovement.movement.name}
               </p>
-              <p className="text-lg font-semibold text-slate-900">{activeMovement.movement.name}</p>
-              <p className="mt-1 text-sm text-slate-500">
+              <p className="mt-1 text-xs text-slate-500">
                 Ketuk area ini atau tombol bawah untuk menutup.
               </p>
             </div>
-            <div className="flex-1 overflow-y-auto pb-4 transition-all duration-300">
-              <div className="space-y-3">
-                {activeMovement.movement.sets.map((set, index) => (
-                  <div
-                    key={set.id}
-                    className="flex items-center justify-between rounded-2xl bg-slate-100 px-4 py-3"
-                  >
-                    <div>
-                      <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
-                        Set {index + 1}
-                      </p>
-                      <p className="text-lg font-semibold text-slate-900">{set.weight}kg</p>
+            <div className="flex-1 overflow-y-auto p-4 transition-all duration-300">
+              <div className="space-y-4">
+                {activeMovement.movement.sets.map((set, index) => {
+                  const cardColor = setCardColors[index % setCardColors.length];
+                  return (
+                    <div
+                      key={set.id}
+                      className="flex items-center justify-between rounded-[28px] border border-white/60 px-5 py-4 shadow-[0_8px_5px_rgba(15,23,42,0.08)]"
+                      style={{ backgroundColor: cardColor }}
+                    >
+                      <div>
+                        <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">
+                          Set {index + 1}
+                        </p>
+                        <p className="text-xl font-semibold text-slate-900">{set.weight}kg</p>
+                      </div>
+                      <div className="text-right text-sm text-slate-500">
+                        <p className="text-sm font-semibold text-slate-700">{set.reps} reps</p>
+                        <p className="text-[11px] text-slate-400">{set.rest} dtk istirahat</p>
+                      </div>
                     </div>
-                    <div className="text-right text-sm text-slate-500">
-                      <p>{set.reps} reps</p>
-                      <p>{set.rest} dtk istirahat</p>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
-            <div className="pt-1">
-              <Button variant="outline" className="w-full" onClick={closeMovementSheet}>
+            {sheetLevelUpEligible && (
+              <div className="mt-4 rounded-[28px] bg-gradient-to-r from-indigo-500 via-blue-500 to-sky-400 p-[1px] shadow-[0_20px_40px_rgba(59,130,246,0.3)]">
+                <div className="flex items-center gap-3 rounded-[28px] bg-gradient-to-r from-indigo-500/90 to-sky-400/90 px-4 py-3 text-white">
+                  <div className="rounded-2xl bg-white/15 p-2">
+                    <TrendingUp className="size-4" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-[9px] font-semibold uppercase tracking-wide text-white/80">
+                      Level up suggestion
+                    </p>
+                    <p className="text-xs font-semibold">Try adding +2.5kg next session</p>
+                  </div>
+                </div>
+              </div>
+            )}
+            <div className="mt-3">
+              <button
+                type="button"
+                onClick={closeMovementSheet}
+                className="flex w-full items-center justify-center gap-2 rounded-full bg-white px-5 py-3 text-sm font-semibold text-slate-900 shadow-[0_6px_19px_rgba(15,23,42,0.12)] focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-200"
+              >
                 Tutup
-              </Button>
+              </button>
             </div>
           </div>
         </div>
