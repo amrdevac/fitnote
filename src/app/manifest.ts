@@ -1,6 +1,15 @@
 import type { MetadataRoute } from "next";
 
-export default function manifest(): MetadataRoute.Manifest {
+type ManifestWithSplash = MetadataRoute.Manifest & {
+  splash_screens?: Array<{
+    src: string;
+    sizes: string;
+    type: string;
+    form_factor?: "narrow" | "wide";
+  }>;
+};
+
+export default function manifest(): ManifestWithSplash {
   return {
     name: "FitNote – Mobile Gym Tracker",
     short_name: "FitNote",
@@ -31,6 +40,20 @@ export default function manifest(): MetadataRoute.Manifest {
         sizes: "512x512",
         type: "image/png",
         purpose: "maskable",
+      },
+    ],
+    splash_screens: [
+      {
+        src: "/splash_screen.png",
+        sizes: "402x874",
+        type: "image/png",
+        form_factor: "narrow",
+      },
+      {
+        src: "/splash_screen.png",
+        sizes: "402x874",
+        type: "image/png",
+        form_factor: "wide",
       },
     ],
   };
