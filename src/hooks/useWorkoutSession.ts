@@ -245,7 +245,10 @@ const useWorkoutSession = () => {
     }
   }
 
-  async function renameSession(sessionId: string, nextTitle: string): Promise<ActionResult> {
+  async function renameSession(
+    sessionId: string,
+    nextTitle: string
+  ): Promise<ActionResult<WorkoutSession>> {
     const targetSession = sessions.find((session) => session.id === sessionId);
     if (!targetSession) {
       return { success: false, error: "Sesi tidak ditemukan." };
