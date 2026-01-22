@@ -8,9 +8,10 @@ import ProgressBarProviders from "@/components/providers/ProgressBar";
 import { ToastProvider } from "@/ui/use-toast";
 import QueryProvider from "@/components/providers/QueryProvider";
 import ServiceWorkerProvider from "@/components/providers/ServiceWorkerProvider";
+import { siteOrigin } from "@/lib/config/site";
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://fitnote.app"),
+  metadataBase: new URL(siteOrigin),
   title: {
     default: "FitNote – Mobile Gym Tracker",
     template: "%s | FitNote",
@@ -33,7 +34,7 @@ export const metadata: Metadata = {
     type: "website",
     title: "FitNote – Mobile Gym Tracker",
     description: "Catat sesi latihan harian langsung dari perangkat mobile kamu.",
-    url: "https://fitnote.app",
+    url: siteOrigin,
     images: ["/icon-512.png"],
   },
   appleWebApp: {

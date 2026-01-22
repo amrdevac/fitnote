@@ -2,7 +2,8 @@
   "name": "FitNote – Mobile Gym Tracker",
   "short_name": "FitNote",
   "description": "Catat dan pantau gerakan gym harian langsung dari perangkat mobile.",
-  "start_url": "/",
+  "start_url": "https://fitnotes-seven.vercel.app/",
+  "scope": "https://fitnotes-seven.vercel.app/",
   "display": "standalone",
   "display_override": [
     "window-controls-overlay",
@@ -89,7 +90,7 @@
   "related_applications": [
     {
       "platform": "webapp",
-      "url": "https://fitnote.app"
+      "url": "https://fitnotes-seven.vercel.app/"
     }
   ],
   "prefer_related_applications": false

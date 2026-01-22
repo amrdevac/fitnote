@@ -1,4 +1,5 @@
 import type { MetadataRoute } from "next";
+import { buildAbsoluteUrl, siteOrigin } from "@/lib/config/site";
 
 type ManifestWithSplash = MetadataRoute.Manifest & {
   splash_screens?: Array<{
@@ -35,11 +36,15 @@ type ManifestWithSplash = MetadataRoute.Manifest & {
 };
 
 export default function manifest(): ManifestWithSplash {
+  const startUrl = buildAbsoluteUrl("/");
+  const scope = buildAbsoluteUrl("/");
+
   return {
     name: "FitNote – Mobile Gym Tracker",
     short_name: "FitNote",
     description: "Catat dan pantau gerakan gym harian langsung dari perangkat mobile.",
-    start_url: "/",
+    start_url: startUrl,
+    scope,
     display: "standalone",
     orientation: "portrait",
     background_color: "#0f172a",
@@ -73,7 +78,7 @@ export default function manifest(): ManifestWithSplash {
     related_applications: [
       {
         platform: "webapp",
-        url: "https://fitnote.app",
+        url: siteOrigin,
       },
     ],
     prefer_related_applications: false,
