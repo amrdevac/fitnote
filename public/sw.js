@@ -3,6 +3,8 @@ const CACHE_NAME = `fitnote-cache-${CACHE_VERSION}`;
 const OFFLINE_URL = "/offline.html";
 const ASSETS = [
   "/",
+  "/builder",
+  "/timers",
   "/icon-192.png",
   "/icon-512.png",
   "/icon-maskable-192.png",

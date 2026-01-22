@@ -51,13 +51,13 @@ const sheetCloseThreshold = 70;
 const sheetExpandThreshold = 25;
 const setCardColors = ["#E5EEFF", "#FFE7EE", "#E8FBEF", "#FFF6DA", "#F1EAFF"];
 
-const MobileWorkoutHome = () => {
+type MobileWorkoutHomeProps = {
+  onOpenBuilder?: () => void;
+};
+
+const MobileWorkoutHome = ({ onOpenBuilder }: MobileWorkoutHomeProps) => {
   const workoutSession = useWorkoutSession();
   const router = useRouter();
-  const swipeStartX = useRef<number | null>(null);
-  const swipeStartY = useRef<number | null>(null);
-  const [swipeOffset, setSwipeOffset] = useState(0);
-  const [isSwiping, setIsSwiping] = useState(false);
   const [expandedSessions, setExpandedSessions] = useState<Set<string>>(new Set());
   const [activeMovement, setActiveMovement] = useState<ActiveMovement | null>(null);
   const [sheetDragStart, setSheetDragStart] = useState<number | null>(null);
@@ -127,11 +127,11 @@ const MobileWorkoutHome = () => {
   }, [isSheetMounted]);
 
   const openBuilder = () => {
+    if (onOpenBuilder) {
+      onOpenBuilder();
+      return;
+    }
     router.push("/builder");
-  };
-
-  const openTimers = () => {
-    router.push("/timers");
   };
 
   const toggleSession = (sessionId: string) => {
@@ -151,61 +151,6 @@ const MobileWorkoutHome = () => {
     }
   };
 
-  function handleTouchStart(event: React.TouchEvent<HTMLDivElement>) {
-    const touch = event.touches[0];
-    swipeStartX.current = touch?.clientX ?? null;
-    swipeStartY.current = touch?.clientY ?? null;
-    setIsSwiping(false);
-    setSwipeOffset(0);
-  }
-
-  function handleTouchMove(event: React.TouchEvent<HTMLDivElement>) {
-    if (swipeStartX.current === null) return;
-    const currentX = event.touches[0]?.clientX ?? 0;
-    const currentY = event.touches[0]?.clientY ?? 0;
-    const deltaX = swipeStartX.current - currentX;
-    const deltaY = (swipeStartY.current ?? currentY) - currentY;
-
-    if (!isSwiping) {
-      if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 10) {
-        setIsSwiping(true);
-      } else {
-        return;
-      }
-    }
-
-    const clamped = Math.max(Math.min(deltaX, 80), -80);
-    setSwipeOffset(clamped);
-  }
-
-  function handleTouchEnd(event: React.TouchEvent<HTMLDivElement>) {
-    if (!isSwiping || swipeStartX.current === null) {
-      swipeStartX.current = null;
-      swipeStartY.current = null;
-      setSwipeOffset(0);
-      setIsSwiping(false);
-      return;
-    }
-    if (swipeStartX.current === null) return;
-    const delta = swipeStartX.current - (event.changedTouches[0]?.clientX ?? 0);
-    if (delta > 80) {
-      setSwipeOffset(120);
-      setTimeout(() => {
-        openBuilder();
-      }, 100);
-      return;
-    } else if (delta < -80) {
-      setSwipeOffset(-120);
-      setTimeout(() => {
-        openTimers();
-      }, 100);
-      return;
-    }
-    setSwipeOffset(0);
-    swipeStartX.current = null;
-    swipeStartY.current = null;
-    setIsSwiping(false);
-  }
 
   const clearSheetTimeout = () => {
     if (sheetAnimationTimeout.current) {
@@ -363,8 +308,6 @@ const MobileWorkoutHome = () => {
 
   const totalMovements = visibleSessions.reduce((acc, session) => acc + session.movements.length, 0);
 
-  const clampedSwipeOffset = Math.max(Math.min(swipeOffset, 80), -80);
-
   useEffect(() => {
     setSelectedSessions((prev) => {
       const next = new Set(
@@ -466,9 +409,6 @@ const MobileWorkoutHome = () => {
   return (
     <div
       className="select-none relative z-0 mx-auto flex min-h-dvh w-full max-w-md flex-col bg-slate-50  overflow-hidden overscroll-none"
-      onTouchStart={handleTouchStart}
-      onTouchMove={handleTouchMove}
-      onTouchEnd={handleTouchEnd}
       style={containerStyle}
     >
       {isSelectionMode && (
@@ -497,10 +437,7 @@ const MobileWorkoutHome = () => {
           </div>
         </div>
       )}
-      <div
-        className={`flex grow flex-col ${isSwiping ? "" : "transition-transform duration-200"}`}
-        style={{ transform: `translateX(${-clampedSwipeOffset}px)` }}
-      >
+      <div className="flex grow flex-col">
         <header className="px-5 pb-6 pt-10">
           <div className="flex items-start justify-between">
             <div>
@@ -525,7 +462,7 @@ const MobileWorkoutHome = () => {
         <div className="flex flex-1 flex-col gap-5 px-4 overflow-y-auto min-h-0 pb-12">
           {visibleSessions.length === 0 && (
             <div className="rounded-2xl border border-dashed border-slate-300 bg-white/80 px-5 py-10 text-center text-sm text-slate-500">
-              Catatan masih kosong. Tap tombol tambah atau swipe ke kiri untuk memulai.
+              Catatan masih kosong. Tap tombol tambah untuk memulai.
             </div>
           )}
 

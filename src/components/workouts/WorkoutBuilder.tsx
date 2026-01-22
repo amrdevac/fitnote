@@ -37,7 +37,12 @@ const Toggle = ({
 
 const stagedSetColors = ["#E5EEFF", "#FFEAE3", "#E8FBEF", "#FFF7DA"];
 
-const WorkoutBuilder = () => {
+type WorkoutBuilderProps = {
+  onClose?: () => void;
+  embedded?: boolean;
+};
+
+const WorkoutBuilder = ({ onClose, embedded = false }: WorkoutBuilderProps) => {
   const router = useRouter();
   const workoutSession = useWorkoutSession();
   const toastApi = useToast();
@@ -51,7 +56,13 @@ const WorkoutBuilder = () => {
   const closePanel = () => {
     if (panelState === "exit") return;
     setPanelState("exit");
-    setTimeout(() => router.back(), 250);
+    setTimeout(() => {
+      if (onClose) {
+        onClose();
+        return;
+      }
+      router.back();
+    }, 250);
   };
 
   const swipeStartX = useRef<number | null>(null);
@@ -275,6 +286,7 @@ const WorkoutBuilder = () => {
 
   return (
     <div
+      data-swipe-ignore={embedded ? true : undefined}
       className="fixed inset-0 z-50 flex bg-gradient-to-b from-emerald-50 via-white to-white"
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
