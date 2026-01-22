@@ -4,10 +4,9 @@
   "description": "Catat dan pantau gerakan gym harian langsung dari perangkat mobile.",
   "start_url": "https://fitnotes-seven.vercel.app/",
   "scope": "https://fitnotes-seven.vercel.app/",
-  "display": "fullscreen",
+  "display": "standalone",
   "display_override": [
-    "window-controls-overlay",
-    "fullscreen"
+    "standalone"
   ],
   "orientation": "portrait",
   "background_color": "#0f172a",
