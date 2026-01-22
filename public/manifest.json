@@ -1,0 +1,96 @@
+{
+  "name": "FitNote – Mobile Gym Tracker",
+  "short_name": "FitNote",
+  "description": "Catat dan pantau gerakan gym harian langsung dari perangkat mobile.",
+  "start_url": "/",
+  "display": "standalone",
+  "display_override": [
+    "window-controls-overlay",
+    "standalone"
+  ],
+  "orientation": "portrait",
+  "background_color": "#0f172a",
+  "theme_color": "#0f172a",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    },
+    {
+      "src": "/icon-maskable-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "splash_screens": [
+    {
+      "src": "/splash_screen.png",
+      "sizes": "402x874",
+      "type": "image/png",
+      "form_factor": "narrow"
+    },
+    {
+      "src": "/splash_screen.png",
+      "sizes": "402x874",
+      "type": "image/png",
+      "form_factor": "wide"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/splash_screen.png",
+      "sizes": "402x874",
+      "type": "image/png",
+      "form_factor": "narrow"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Catat Sesi Baru",
+      "short_name": "Builder",
+      "description": "Buka form pengelolaan aktivitas untuk mencatat set latihan.",
+      "url": "/builder",
+      "icons": [
+        {
+          "src": "/icon-192.png",
+          "sizes": "96x96",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "Kelola Timer",
+      "short_name": "Timers",
+      "description": "Langsung ke halaman pengatur timer latihan.",
+      "url": "/timers",
+      "icons": [
+        {
+          "src": "/icon-192.png",
+          "sizes": "96x96",
+          "type": "image/png"
+        }
+      ]
+    }
+  ],
+  "iarc_rating_id": "e1a6a4b0-0000-4a1b-b5b5-example000001",
+  "related_applications": [
+    {
+      "platform": "webapp",
+      "url": "https://fitnote.app"
+    }
+  ],
+  "prefer_related_applications": false
+}

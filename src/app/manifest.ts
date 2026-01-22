@@ -24,6 +24,14 @@ type ManifestWithSplash = MetadataRoute.Manifest & {
       type: string;
     }>;
   }>;
+  related_applications?: Array<{
+    platform: string;
+    url?: string;
+    id?: string;
+  }>;
+  prefer_related_applications?: boolean;
+  display_override?: string[];
+  iarc_rating_id?: string;
 };
 
 export default function manifest(): ManifestWithSplash {
@@ -36,6 +44,7 @@ export default function manifest(): ManifestWithSplash {
     orientation: "portrait",
     background_color: "#0f172a",
     theme_color: "#0f172a",
+    display_override: ["window-controls-overlay", "standalone"],
     icons: [
       {
         src: "/icon-192.png",
@@ -60,6 +69,14 @@ export default function manifest(): ManifestWithSplash {
         purpose: "maskable",
       },
     ],
+    iarc_rating_id: "e1a6a4b0-0000-4a1b-b5b5-example000001",
+    related_applications: [
+      {
+        platform: "webapp",
+        url: "https://fitnote.app",
+      },
+    ],
+    prefer_related_applications: false,
     splash_screens: [
       {
         src: "/splash_screen.png",
