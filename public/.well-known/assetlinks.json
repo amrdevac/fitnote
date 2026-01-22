@@ -3,6 +3,6 @@
       "target": {
         "namespace": "android_app",
         "package_name": "app.vercel.fitnotes_seven.twa",
-        "sha256_cert_fingerprints": ["61:70:1F:3C:FB:24:78:46:03:6C:3A:CD:CF:35:E1:0D:69:6E:80:9D:F9:C7:4B:6E:72:38:E9:DF:B4:1F:3A:E8"]
+        "sha256_cert_fingerprints": ["4B:55:98:8E:3C:87:04:0E:D4:BD:64:AE:3D:4F:36:9D:C0:21:96:7A:F4:5E:0E:9D:68:D7:21:08:11:C7:29:7A"]
       }
     }]
