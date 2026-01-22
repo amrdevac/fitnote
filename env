@@ -10,3 +10,4 @@ NEXT_PUBLIC_IMAGEKIT_PUBLIC_KEY=public_S9lamHXAiU3yXY6g1WunuiqmMtU=
 ## NextAuth
 NEXTAUTH_SECRET=change-me-to-a-long-random-string
 NEXTAUTH_URL=http://localhost:3321
+NEXT_PUBLIC_SITE_URL=https://fitnotes-seven.vercel.app

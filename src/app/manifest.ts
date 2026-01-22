@@ -45,11 +45,11 @@ export default function manifest(): ManifestWithSplash {
     description: "Catat dan pantau gerakan gym harian langsung dari perangkat mobile.",
     start_url: startUrl,
     scope,
-    display: "standalone",
+    display: "fullscreen",
     orientation: "portrait",
     background_color: "#0f172a",
     theme_color: "#0f172a",
-    display_override: ["window-controls-overlay", "standalone"],
+    display_override: ["window-controls-overlay", "fullscreen"],
     icons: [
       {
         src: "/icon-192.png",
