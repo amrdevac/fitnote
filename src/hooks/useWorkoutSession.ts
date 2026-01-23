@@ -245,6 +245,21 @@ const useWorkoutSession = () => {
     }
   }
 
+  async function restoreSessions(ids: string[]) {
+    if (!ids.length) return;
+    const idSet = new Set(ids);
+    const nextSessions = sessions.map((session) =>
+      idSet.has(session.id) ? { ...session, archivedAt: undefined } : session
+    );
+    setSessions(nextSessions);
+    try {
+      await workoutsDb.replaceSessions(nextSessions);
+    } catch (error) {
+      console.error("Failed to restore sessions", error);
+      setSessions(sessions);
+    }
+  }
+
   async function renameSession(
     sessionId: string,
     nextTitle: string
@@ -326,6 +341,7 @@ const useWorkoutSession = () => {
     addCustomMovement,
     isInitialized,
     archiveSessions,
+    restoreSessions,
     renameSession,
   };
 };

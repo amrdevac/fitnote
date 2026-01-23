@@ -8,12 +8,14 @@ type SwipeNavigationProps = {
   rightRoute?: string;
   onSwipeLeft?: () => void;
   onSwipeRight?: () => void;
+  onSwipeProgress?: (progress: number) => void;
   className?: string;
   children: React.ReactNode;
 };
 
 const swipeThreshold = 80;
 const swipeIntentThreshold = 10;
+const swipeProgressDistance = 220;
 
 const shouldIgnoreTarget = (target: EventTarget | null) => {
   if (!(target instanceof HTMLElement)) return false;
@@ -32,6 +34,7 @@ export default function SwipeNavigation({
   rightRoute,
   onSwipeLeft,
   onSwipeRight,
+  onSwipeProgress,
   className,
   children,
 }: SwipeNavigationProps) {
@@ -40,12 +43,17 @@ export default function SwipeNavigation({
   const startY = useRef<number | null>(null);
   const isSwiping = useRef(false);
   const isIgnored = useRef(false);
+  const hasProgressed = useRef(false);
 
   const resetSwipe = () => {
+    if (onSwipeProgress && hasProgressed.current) {
+      onSwipeProgress(0);
+    }
     startX.current = null;
     startY.current = null;
     isSwiping.current = false;
     isIgnored.current = false;
+    hasProgressed.current = false;
   };
 
   const handleTouchStart = (event: React.TouchEvent<HTMLDivElement>) => {
@@ -72,6 +80,12 @@ export default function SwipeNavigation({
       } else {
         return;
       }
+    }
+
+    if (onSwipeProgress) {
+      const progress = Math.max(-1, Math.min(1, deltaX / swipeProgressDistance));
+      onSwipeProgress(progress);
+      hasProgressed.current = true;
     }
   };
 

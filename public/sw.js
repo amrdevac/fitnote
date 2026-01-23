@@ -1,10 +1,12 @@
-const CACHE_VERSION = "v0.6.5";
+const CACHE_VERSION = "v0.6.6";
 const CACHE_NAME = `fitnote-cache-${CACHE_VERSION}`;
+const DATA_CACHE_NAME = `fitnote-data-cache-${CACHE_VERSION}`;
 const OFFLINE_URL = "/offline.html";
 const ASSETS = [
   "/",
   "/builder",
   "/timers",
+  "/archive",
   "/icon-192.png",
   "/icon-512.png",
   "/icon-maskable-192.png",
@@ -23,18 +25,16 @@ self.addEventListener("install", (event) => {
 
 self.addEventListener("activate", (event) => {
   event.waitUntil(
-    caches
-      .keys()
-      .then((keys) =>
-        Promise.all(
-          keys.map((key) => {
-            if (key !== CACHE_NAME) {
-              return caches.delete(key);
-            }
-            return undefined;
-          })
-        )
+    caches.keys().then((keys) =>
+      Promise.all(
+        keys.map((key) => {
+          if (key !== CACHE_NAME && key !== DATA_CACHE_NAME) {
+            return caches.delete(key);
+          }
+          return undefined;
+        })
       )
+    )
       .then(() => self.clients.claim())
   );
 });
@@ -44,13 +44,11 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  event.respondWith(
-    caches.match(event.request).then((cachedResponse) => {
-      if (cachedResponse) {
-        return cachedResponse;
-      }
+  const url = new URL(event.request.url);
 
-      return fetch(event.request)
+  if (event.request.mode === "navigate") {
+    event.respondWith(
+      fetch(event.request)
         .then((response) => {
           const responseClone = response.clone();
           caches.open(CACHE_NAME).then((cache) => {
@@ -58,7 +56,51 @@ self.addEventListener("fetch", (event) => {
           });
           return response;
         })
-        .catch(() => caches.match(OFFLINE_URL));
-    })
-  );
+        .catch(() =>
+          caches
+            .match(event.request)
+            .then((cachedResponse) => cachedResponse || caches.match(OFFLINE_URL))
+        )
+    );
+    return;
+  }
+
+  if (url.origin === self.location.origin && url.pathname.startsWith("/api/")) {
+    event.respondWith(
+      caches.open(DATA_CACHE_NAME).then((cache) =>
+        cache.match(event.request).then((cachedResponse) => {
+          const networkFetch = fetch(event.request)
+            .then((response) => {
+              cache.put(event.request, response.clone());
+              return response;
+            })
+            .catch(() => undefined);
+
+          return cachedResponse || networkFetch;
+        })
+      )
+    );
+    return;
+  }
+
+  if (url.origin === self.location.origin) {
+    event.respondWith(
+      caches.match(event.request).then((cachedResponse) => {
+        if (cachedResponse) {
+          return cachedResponse;
+        }
+
+        return fetch(event.request).then((response) => {
+          const responseClone = response.clone();
+          caches.open(CACHE_NAME).then((cache) => {
+            cache.put(event.request, responseClone);
+          });
+          return response;
+        });
+      })
+    );
+    return;
+  }
+
+  event.respondWith(fetch(event.request));
 });

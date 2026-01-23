@@ -22,7 +22,6 @@ import {
   BarChart3,
   User2,
   TrendingUp,
-  XIcon,
 } from "lucide-react";
 import { Card, CardHeader, CardTitle } from "@/ui/card";
 import { Button } from "@/ui/button";
@@ -451,7 +450,7 @@ const MobileWorkoutHome = ({ onOpenBuilder }: MobileWorkoutHomeProps) => {
             </div>
             <button
               type="button"
-              onClick={() => router.push("/calendar")}
+              onClick={() => router.push("/archive")}
               className="inline-flex size-12 items-center justify-center rounded-2xl bg-white text-slate-600 shadow-lg shadow-emerald-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-200"
             >
               <CalendarDays className="size-5" />
