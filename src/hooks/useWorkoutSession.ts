@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { movementOptions } from "@/data/workouts";
 import { MovementOption, WorkoutMovement, WorkoutSession, WorkoutSet } from "@/types/workout";
 import { getDefaultSessionTitle } from "@/lib/sessionTitle";
@@ -43,7 +43,7 @@ const useWorkoutSession = () => {
   const [isInitialized, setIsInitialized] = useState(false);
   const draftKey = "fitnote-builder-draft";
 
-  const ensureSessionTitle = (session: WorkoutSession): WorkoutSession => {
+  const ensureSessionTitle = useCallback((session: WorkoutSession): WorkoutSession => {
     const normalizedTitle = session.title?.trim();
     if (normalizedTitle?.length) {
       if (normalizedTitle === session.title) {
@@ -52,6 +52,30 @@ const useWorkoutSession = () => {
       return { ...session, title: normalizedTitle };
     }
     return { ...session, title: getDefaultSessionTitle(session.createdAt) };
+  }, []);
+
+  const refreshSessions = useCallback(async () => {
+    try {
+      const storedSessions = await workoutsDb.getSessions();
+      const normalizedSessions = storedSessions.map((session) => ensureSessionTitle(session));
+      setSessions(normalizedSessions);
+      normalizedSessions.forEach((session, index) => {
+        const original = storedSessions[index];
+        if (!original) return;
+        if (session.title !== original.title) {
+          workoutsDb
+            .saveSession(session)
+            .catch((error) => console.error("Failed to backfill session title", error));
+        }
+      });
+    } catch (error) {
+      console.error("Failed to refresh sessions from IndexedDB", error);
+    }
+  }, [ensureSessionTitle]);
+
+  const notifySessionsUpdated = () => {
+    if (typeof window === "undefined") return;
+    window.dispatchEvent(new Event("fitnote:sessions-updated"));
   };
 
   useEffect(() => {
@@ -124,6 +148,15 @@ const useWorkoutSession = () => {
       cancelled = true;
     };
   }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const handleSessionsUpdated = () => {
+      refreshSessions();
+    };
+    window.addEventListener("fitnote:sessions-updated", handleSessionsUpdated);
+    return () => window.removeEventListener("fitnote:sessions-updated", handleSessionsUpdated);
+  }, [refreshSessions]);
 
   useEffect(() => {
     if (!isInitialized || typeof window === "undefined") return;
@@ -220,6 +253,7 @@ const useWorkoutSession = () => {
       if (typeof window !== "undefined") {
         window.localStorage.removeItem(draftKey);
       }
+      notifySessionsUpdated();
       return { success: true, data: newSession };
     } catch (error) {
       console.error("Failed to persist sessions", error);
@@ -239,6 +273,7 @@ const useWorkoutSession = () => {
     setSessions(nextSessions);
     try {
       await workoutsDb.replaceSessions(nextSessions);
+      notifySessionsUpdated();
     } catch (error) {
       console.error("Failed to archive sessions", error);
       setSessions(sessions);
@@ -254,6 +289,7 @@ const useWorkoutSession = () => {
     setSessions(nextSessions);
     try {
       await workoutsDb.replaceSessions(nextSessions);
+      notifySessionsUpdated();
     } catch (error) {
       console.error("Failed to restore sessions", error);
       setSessions(sessions);
@@ -280,6 +316,7 @@ const useWorkoutSession = () => {
     );
     try {
       await workoutsDb.saveSession(updatedSession);
+      notifySessionsUpdated();
       return { success: true, data: updatedSession };
     } catch (error) {
       console.error("Failed to rename session", error);
