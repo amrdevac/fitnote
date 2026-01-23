@@ -47,7 +47,26 @@ const ExerciseTimerManager = ({ onClose, embedded = false }: ExerciseTimerManage
   const [isSaving, setIsSaving] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const swipeStartX = useRef<number | null>(null);
+  const swipeAnimationRef = useRef<number | null>(null);
+  const swipeProgressRef = useRef(0);
   const [panelState, setPanelState] = useState<"enter" | "active" | "exit">("enter");
+
+  const applySwipeProgress = (progress: number) => {
+    if (!embedded) return;
+    swipeProgressRef.current = progress;
+    if (swipeAnimationRef.current) return;
+    swipeAnimationRef.current = window.requestAnimationFrame(() => {
+      swipeAnimationRef.current = null;
+      const node = containerRef.current;
+      if (!node) return;
+      const clamped = Math.min(1, Math.abs(swipeProgressRef.current));
+      const scale = 1 - 0.04 * clamped;
+      const opacity = 1 - 0.35 * clamped;
+      node.style.transform = `scale(${scale})`;
+      node.style.opacity = `${opacity}`;
+      node.style.transition = "none";
+    });
+  };
 
   const totalQueues = useMemo(() => {
     return segments.reduce(
@@ -158,18 +177,35 @@ const ExerciseTimerManager = ({ onClose, embedded = false }: ExerciseTimerManage
     swipeStartX.current = event.touches[0]?.clientX ?? null;
   }
 
+  function handleTouchMove(event: React.TouchEvent<HTMLDivElement>) {
+    if (!embedded || swipeStartX.current === null) return;
+    const currentX = event.touches[0]?.clientX ?? 0;
+    const deltaX = swipeStartX.current - currentX;
+    const progress = Math.max(0, Math.min(1, deltaX / 220));
+    applySwipeProgress(progress);
+  }
+
   function handleTouchEnd(event: React.TouchEvent<HTMLDivElement>) {
     if (swipeStartX.current === null) return;
     const delta = swipeStartX.current - (event.changedTouches[0]?.clientX ?? 0);
     if (delta > 60) {
       closePanel();
     }
+    applySwipeProgress(0);
     swipeStartX.current = null;
   }
 
   useEffect(() => {
     const id = requestAnimationFrame(() => setPanelState("active"));
     return () => cancelAnimationFrame(id);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (swipeAnimationRef.current) {
+        cancelAnimationFrame(swipeAnimationRef.current);
+      }
+    };
   }, []);
 
   const closePanel = () => {
@@ -188,14 +224,17 @@ const ExerciseTimerManager = ({ onClose, embedded = false }: ExerciseTimerManage
 
   return (
     <div
-      ref={containerRef}
       data-swipe-ignore={embedded ? true : undefined}
       className="fixed inset-0 z-50 flex bg-gradient-to-b from-emerald-50 via-white to-white"
       onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
     >
       <div className={`flex h-full w-full flex-col transition-transform duration-300 ${panelClass}`}>
-        <div className="mx-auto flex h-full w-full max-w-2xl flex-col px-5 pb-20 pt-5 text-slate-900">
+        <div
+          ref={containerRef}
+          className="mx-auto flex h-full w-full max-w-2xl flex-col px-5 pb-20 pt-5 text-slate-900"
+        >
           <div className="mb-3 flex items-center justify-between">
             <div>
               <p className=" uppercase tracking-wide text-slate-400">Pengelolaan Timer</p>

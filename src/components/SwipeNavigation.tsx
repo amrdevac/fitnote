@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useRef } from "react";
+import { useEffect, useRef } from "react";
 
 type SwipeNavigationProps = {
   leftRoute?: string;
@@ -9,6 +9,7 @@ type SwipeNavigationProps = {
   onSwipeLeft?: () => void;
   onSwipeRight?: () => void;
   onSwipeProgress?: (progress: number) => void;
+  animateSwipe?: boolean;
   className?: string;
   children: React.ReactNode;
 };
@@ -35,6 +36,7 @@ export default function SwipeNavigation({
   onSwipeLeft,
   onSwipeRight,
   onSwipeProgress,
+  animateSwipe = true,
   className,
   children,
 }: SwipeNavigationProps) {
@@ -44,10 +46,41 @@ export default function SwipeNavigation({
   const isSwiping = useRef(false);
   const isIgnored = useRef(false);
   const hasProgressed = useRef(false);
+  const contentRef = useRef<HTMLDivElement | null>(null);
+  const animationFrameRef = useRef<number | null>(null);
+  const progressRef = useRef(0);
+
+  const applySwipeProgress = (progress: number) => {
+    progressRef.current = progress;
+    if (!animateSwipe) return;
+    if (animationFrameRef.current) return;
+    animationFrameRef.current = window.requestAnimationFrame(() => {
+      animationFrameRef.current = null;
+      const node = contentRef.current;
+      if (!node) return;
+      const clamped = Math.min(1, Math.abs(progressRef.current));
+      const scale = 1 - 0.04 * clamped;
+      const opacity = 1 - 0.35 * clamped;
+      node.style.transform = `scale(${scale})`;
+      node.style.opacity = `${opacity}`;
+      node.style.transition = "none";
+    });
+  };
+
+  useEffect(() => {
+    return () => {
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
+    };
+  }, []);
 
   const resetSwipe = () => {
     if (onSwipeProgress && hasProgressed.current) {
       onSwipeProgress(0);
+    }
+    if (hasProgressed.current) {
+      applySwipeProgress(0);
     }
     startX.current = null;
     startY.current = null;
@@ -82,11 +115,12 @@ export default function SwipeNavigation({
       }
     }
 
+    const progress = Math.max(-1, Math.min(1, deltaX / swipeProgressDistance));
+    applySwipeProgress(progress);
     if (onSwipeProgress) {
-      const progress = Math.max(-1, Math.min(1, deltaX / swipeProgressDistance));
       onSwipeProgress(progress);
-      hasProgressed.current = true;
     }
+    hasProgressed.current = true;
   };
 
   const handleTouchEnd = (event: React.TouchEvent<HTMLDivElement>) => {
@@ -124,7 +158,7 @@ export default function SwipeNavigation({
       onTouchEnd={handleTouchEnd}
       onTouchCancel={resetSwipe}
     >
-      {children}
+      <div ref={contentRef}>{children}</div>
     </div>
   );
 }

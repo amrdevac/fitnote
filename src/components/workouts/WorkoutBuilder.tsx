@@ -66,8 +66,35 @@ const WorkoutBuilder = ({ onClose, embedded = false }: WorkoutBuilderProps) => {
   };
 
   const swipeStartX = useRef<number | null>(null);
+  const panelRef = useRef<HTMLDivElement | null>(null);
+  const swipeAnimationRef = useRef<number | null>(null);
+  const swipeProgressRef = useRef(0);
+
+  const applySwipeProgress = (progress: number) => {
+    if (!embedded) return;
+    swipeProgressRef.current = progress;
+    if (swipeAnimationRef.current) return;
+    swipeAnimationRef.current = window.requestAnimationFrame(() => {
+      swipeAnimationRef.current = null;
+      const node = panelRef.current;
+      if (!node) return;
+      const clamped = Math.min(1, Math.abs(swipeProgressRef.current));
+      const scale = 1 - 0.04 * clamped;
+      const opacity = 1 - 0.35 * clamped;
+      node.style.transform = `scale(${scale})`;
+      node.style.opacity = `${opacity}`;
+      node.style.transition = "none";
+    });
+  };
   function handleTouchStart(event: React.TouchEvent<HTMLDivElement>) {
     swipeStartX.current = event.touches[0]?.clientX ?? null;
+  }
+  function handleTouchMove(event: React.TouchEvent<HTMLDivElement>) {
+    if (!embedded || swipeStartX.current === null) return;
+    const currentX = event.touches[0]?.clientX ?? 0;
+    const deltaX = currentX - swipeStartX.current;
+    const progress = Math.max(0, Math.min(1, deltaX / 220));
+    applySwipeProgress(progress);
   }
   function handleTouchEnd(event: React.TouchEvent<HTMLDivElement>) {
     if (swipeStartX.current === null) return;
@@ -75,6 +102,7 @@ const WorkoutBuilder = ({ onClose, embedded = false }: WorkoutBuilderProps) => {
     if (delta < -60) {
       closePanel();
     }
+    applySwipeProgress(0);
     swipeStartX.current = null;
   }
 
@@ -112,6 +140,14 @@ const WorkoutBuilder = ({ onClose, embedded = false }: WorkoutBuilderProps) => {
     loadPreferences();
     return () => {
       cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (swipeAnimationRef.current) {
+        cancelAnimationFrame(swipeAnimationRef.current);
+      }
     };
   }, []);
 
@@ -289,55 +325,57 @@ const WorkoutBuilder = ({ onClose, embedded = false }: WorkoutBuilderProps) => {
       data-swipe-ignore={embedded ? true : undefined}
       className="fixed inset-0 z-50 flex bg-gradient-to-b from-emerald-50 via-white to-white"
       onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
     >
       <div
         className={`flex h-full w-full flex-col bg-transparent transition-transform duration-300 ${panelClasses}`}
       >
-        <header className="flex items-center justify-between px-6 pb-6 pt-8">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={closePanel}
-            className="rounded-2xl bg-white shadow-md text-slate-600"
-          >
-            <ArrowLeftIcon className="size-5" />
-          </Button>
-          <div className="flex items-center gap-3 rounded-full bg-white/80 px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.3em] text-slate-400 shadow-md">
-            Pengelolaan Aktivitas
-          </div>
-          <Sheet open={settingsOpen} onOpenChange={setSettingsOpen}>
-            <SheetTrigger asChild>
-              <Button size="icon" variant="ghost" className="rounded-2xl bg-white shadow-md text-slate-600">
-                <Settings2Icon className="size-5" />
-              </Button>
-            </SheetTrigger>
-            <SheetContent
-              side="bottom"
-              className="rounded-t-3xl border-none bg-white px-6 pb-8 pt-6 text-slate-900"
+        <div ref={panelRef} className="flex h-full w-full flex-col">
+          <header className="flex items-center justify-between px-6 pb-6 pt-8">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={closePanel}
+              className="rounded-2xl bg-white shadow-md text-slate-600"
             >
-              <SheetHeader className="mb-4 px-0">
-                <SheetTitle>Pengaturan FitNote</SheetTitle>
-              </SheetHeader>
-              <div className="space-y-2">
-                <label className="flex items-center justify-between rounded-xl border border-slate-200 px-4 py-3">
-                  <span className="text-sm font-medium text-slate-800">
-                    Tampilkan tombol tambah set
-                  </span>
-                  <Toggle checked={showAddButton} onChange={setShowAddButton} />
-                </label>
-                <label className="flex items-center justify-between rounded-xl border border-slate-200 px-4 py-3">
-                  <span className="text-sm font-medium text-slate-800">
-                    Fokus otomatis ke input gerakan
-                  </span>
-                  <Toggle checked={focusInputOnOpen} onChange={setFocusInputOnOpen} />
-                </label>
-              </div>
-            </SheetContent>
-          </Sheet>
-        </header>
+              <ArrowLeftIcon className="size-5" />
+            </Button>
+            <div className="flex items-center gap-3 rounded-full bg-white/80 px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.3em] text-slate-400 shadow-md">
+              Pengelolaan Aktivitas
+            </div>
+            <Sheet open={settingsOpen} onOpenChange={setSettingsOpen}>
+              <SheetTrigger asChild>
+                <Button size="icon" variant="ghost" className="rounded-2xl bg-white shadow-md text-slate-600">
+                  <Settings2Icon className="size-5" />
+                </Button>
+              </SheetTrigger>
+              <SheetContent
+                side="bottom"
+                className="rounded-t-3xl border-none bg-white px-6 pb-8 pt-6 text-slate-900"
+              >
+                <SheetHeader className="mb-4 px-0">
+                  <SheetTitle>Pengaturan FitNote</SheetTitle>
+                </SheetHeader>
+                <div className="space-y-2">
+                  <label className="flex items-center justify-between rounded-xl border border-slate-200 px-4 py-3">
+                    <span className="text-sm font-medium text-slate-800">
+                      Tampilkan tombol tambah set
+                    </span>
+                    <Toggle checked={showAddButton} onChange={setShowAddButton} />
+                  </label>
+                  <label className="flex items-center justify-between rounded-xl border border-slate-200 px-4 py-3">
+                    <span className="text-sm font-medium text-slate-800">
+                      Fokus otomatis ke input gerakan
+                    </span>
+                    <Toggle checked={focusInputOnOpen} onChange={setFocusInputOnOpen} />
+                  </label>
+                </div>
+              </SheetContent>
+            </Sheet>
+          </header>
 
-        <div className="flex-1 space-y-5 overflow-y-auto px-6 pb-40 pt-2">
+          <div className="flex-1 space-y-5 overflow-y-auto px-6 pb-40 pt-2">
           <div className="space-y-2 rounded-[32px] border border-white/40 bg-white/90 p-5 shadow-[0_25px_50px_rgba(15,23,42,0.08)]">
             <div className="space-y-2">
               <div className="flex items-center gap-3">
@@ -622,6 +660,7 @@ const WorkoutBuilder = ({ onClose, embedded = false }: WorkoutBuilderProps) => {
           >
             Simpan Sesi
           </Button>
+          </div>
         </div>
       </div>
     </div>
