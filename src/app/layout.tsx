@@ -4,8 +4,9 @@ import "./theme.css";
 
 import "aos/dist/aos.css";
 
+import { ThemeProvider } from "next-themes";
 import ProgressBarProviders from "@/components/providers/ProgressBar";
-import { ToastProvider } from "@/ui/use-toast";
+import { Toaster } from "@/ui/toaster";
 import QueryProvider from "@/components/providers/QueryProvider";
 import ServiceWorkerProvider from "@/components/providers/ServiceWorkerProvider";
 import { siteOrigin } from "@/lib/config/site";
@@ -57,16 +58,22 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="id" className="theme-default">
+    <html lang="id" className="theme-default" suppressHydrationWarning>
       <body className="antialiased">
-        <QueryProvider>
-          <ToastProvider>
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="dark"
+          forcedTheme="dark"
+          enableSystem={false}
+        >
+          <QueryProvider>
             <ProgressBarProviders>
               {children}
               <ServiceWorkerProvider />
+              <Toaster position="top-center" />
             </ProgressBarProviders>
-          </ToastProvider>
-        </QueryProvider>
+          </QueryProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

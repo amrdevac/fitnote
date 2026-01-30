@@ -17,6 +17,7 @@ type SwipeNavigationProps = {
 const swipeThreshold = 80;
 const swipeIntentThreshold = 10;
 const swipeProgressDistance = 220;
+const edgeSwipeThreshold = 24;
 
 const shouldIgnoreTarget = (target: EventTarget | null) => {
   if (!(target instanceof HTMLElement)) return false;
@@ -28,6 +29,23 @@ const shouldIgnoreTarget = (target: EventTarget | null) => {
     tagName === "TEXTAREA" ||
     tagName === "SELECT"
   );
+};
+
+const hasScrollableParent = (target: EventTarget | null) => {
+  if (!(target instanceof HTMLElement)) return false;
+  let node: HTMLElement | null = target;
+  while (node) {
+    const style = window.getComputedStyle(node);
+    const overflowY = style.overflowY;
+    if (
+      (overflowY === "auto" || overflowY === "scroll") &&
+      node.scrollHeight > node.clientHeight
+    ) {
+      return true;
+    }
+    node = node.parentElement;
+  }
+  return false;
 };
 
 export default function SwipeNavigation({
@@ -58,6 +76,12 @@ export default function SwipeNavigation({
       animationFrameRef.current = null;
       const node = contentRef.current;
       if (!node) return;
+      if (progressRef.current === 0) {
+        node.style.transform = "";
+        node.style.opacity = "";
+        node.style.transition = "";
+        return;
+      }
       const clamped = Math.min(1, Math.abs(progressRef.current));
       const scale = 1 - 0.04 * clamped;
       const opacity = 1 - 0.35 * clamped;
@@ -90,11 +114,18 @@ export default function SwipeNavigation({
   };
 
   const handleTouchStart = (event: React.TouchEvent<HTMLDivElement>) => {
-    if (shouldIgnoreTarget(event.target)) {
+    const touch = event.touches[0];
+    const touchX = touch?.clientX ?? 0;
+    const viewportWidth = typeof window === "undefined" ? 0 : window.innerWidth;
+    const isEdgeStart =
+      touchX <= edgeSwipeThreshold || touchX >= Math.max(0, viewportWidth - edgeSwipeThreshold);
+    if (
+      shouldIgnoreTarget(event.target) ||
+      (hasScrollableParent(event.target) && !isEdgeStart)
+    ) {
       isIgnored.current = true;
       return;
     }
-    const touch = event.touches[0];
     startX.current = touch?.clientX ?? null;
     startY.current = touch?.clientY ?? null;
     isSwiping.current = false;
@@ -153,6 +184,7 @@ export default function SwipeNavigation({
   return (
     <div
       className={className}
+      style={{ touchAction: "pan-y" }}
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}

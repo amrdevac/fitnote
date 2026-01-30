@@ -40,8 +40,8 @@ type ExerciseTimerManagerProps = {
 
 const ExerciseTimerManager = ({ onClose, embedded = false }: ExerciseTimerManagerProps) => {
   const router = useRouter();
-  const { toast } = useToast();
   const timerStore = useExerciseTimers();
+  const { toast } = useToast();
   const [timerName, setTimerName] = useState("");
   const [segments, setSegments] = useState<FormSegment[]>([createFormSegment()]);
   const [isSaving, setIsSaving] = useState(false);
@@ -59,6 +59,12 @@ const ExerciseTimerManager = ({ onClose, embedded = false }: ExerciseTimerManage
       swipeAnimationRef.current = null;
       const node = containerRef.current;
       if (!node) return;
+      if (swipeProgressRef.current === 0) {
+        node.style.transform = "";
+        node.style.opacity = "";
+        node.style.transition = "";
+        return;
+      }
       const clamped = Math.min(1, Math.abs(swipeProgressRef.current));
       const scale = 1 - 0.04 * clamped;
       const opacity = 1 - 0.35 * clamped;
@@ -91,12 +97,12 @@ const ExerciseTimerManager = ({ onClose, embedded = false }: ExerciseTimerManage
     toast({
       title: "Form belum lengkap",
       description: message,
-      variant: "destructive",
+      variant: "error",
     });
   }
 
   function showSuccess(message: string) {
-    toast({ title: message });
+    toast({ title: message, variant: "success" });
   }
 
   const updateSegment = (segmentId: string, field: keyof FormSegment, value: string) => {

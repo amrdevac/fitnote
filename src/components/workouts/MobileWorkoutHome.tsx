@@ -118,7 +118,7 @@ const MobileWorkoutHome = ({ onOpenBuilder }: MobileWorkoutHomeProps) => {
     const previousOverflow = style.overflow;
     const previousTouchAction = style.touchAction;
     style.overflow = "hidden";
-    style.touchAction = "none";
+    style.touchAction = "pan-y";
     return () => {
       style.overflow = previousOverflow;
       style.touchAction = previousTouchAction;
@@ -407,7 +407,7 @@ const MobileWorkoutHome = ({ onOpenBuilder }: MobileWorkoutHomeProps) => {
 
   return (
     <div
-      className="select-none relative z-0 mx-auto flex min-h-dvh w-full max-w-md flex-col bg-slate-50  overflow-hidden overscroll-none"
+      className="select-none relative z-0 mx-auto flex h-dvh w-full max-w-md flex-col bg-slate-50 overflow-y-auto overscroll-none"
       style={containerStyle}
     >
       {isSelectionMode && (
@@ -436,9 +436,9 @@ const MobileWorkoutHome = ({ onOpenBuilder }: MobileWorkoutHomeProps) => {
           </div>
         </div>
       )}
-      <div className="flex grow flex-col">
-        <header className="px-5 pb-6 pt-10">
-          <div className="flex items-start justify-between">
+        <div className="flex grow flex-col">
+          <header className="px-5 pb-6 pt-10">
+            <div className="flex items-start justify-between">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.2em] text-emerald-600">
                 Consistency is key
@@ -458,7 +458,10 @@ const MobileWorkoutHome = ({ onOpenBuilder }: MobileWorkoutHomeProps) => {
           </div>
         </header>
 
-        <div className="flex flex-1 flex-col gap-5 px-4 overflow-y-auto min-h-0 pb-12">
+        <div
+          className="flex flex-col gap-5 px-4 pb-12"
+          style={{ touchAction: "pan-y", WebkitOverflowScrolling: "touch" }}
+        >
           {visibleSessions.length === 0 && (
             <div className="rounded-2xl border border-dashed border-slate-300 bg-white/80 px-5 py-10 text-center text-sm text-slate-500">
               Catatan masih kosong. Tap tombol tambah untuk memulai.

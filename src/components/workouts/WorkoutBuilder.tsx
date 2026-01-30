@@ -45,8 +45,6 @@ type WorkoutBuilderProps = {
 const WorkoutBuilder = ({ onClose, embedded = false }: WorkoutBuilderProps) => {
   const router = useRouter();
   const workoutSession = useWorkoutSession();
-  const toastApi = useToast();
-
   const [panelState, setPanelState] = useState<"enter" | "active" | "exit">("enter");
   useEffect(() => {
     const id = requestAnimationFrame(() => setPanelState("active"));
@@ -78,6 +76,12 @@ const WorkoutBuilder = ({ onClose, embedded = false }: WorkoutBuilderProps) => {
       swipeAnimationRef.current = null;
       const node = panelRef.current;
       if (!node) return;
+      if (swipeProgressRef.current === 0) {
+        node.style.transform = "";
+        node.style.opacity = "";
+        node.style.transition = "";
+        return;
+      }
       const clamped = Math.min(1, Math.abs(swipeProgressRef.current));
       const scale = 1 - 0.04 * clamped;
       const opacity = 1 - 0.35 * clamped;
@@ -190,17 +194,19 @@ const WorkoutBuilder = ({ onClose, embedded = false }: WorkoutBuilderProps) => {
     );
   }, [trimmedMovementQuery, workoutSession.movementLibrary]);
 
+  const { toast } = useToast();
+
   function showError(message?: string) {
     if (!message) return;
-    toastApi.toast({
+    toast({
       title: "Form belum lengkap",
       description: message,
-      variant: "destructive",
+      variant: "error",
     });
   }
 
   function showSuccess(message: string) {
-    toastApi.toast({ title: message });
+    toast({ title: message, variant: "success" });
   }
 
   function handleAddSet() {
@@ -337,7 +343,7 @@ const WorkoutBuilder = ({ onClose, embedded = false }: WorkoutBuilderProps) => {
               variant="ghost"
               size="icon"
               onClick={closePanel}
-              className="rounded-2xl bg-white shadow-md text-slate-600"
+              className="rounded-md bg-white shadow-md text-slate-600"
             >
               <ArrowLeftIcon className="size-5" />
             </Button>
@@ -346,7 +352,7 @@ const WorkoutBuilder = ({ onClose, embedded = false }: WorkoutBuilderProps) => {
             </div>
             <Sheet open={settingsOpen} onOpenChange={setSettingsOpen}>
               <SheetTrigger asChild>
-                <Button size="icon" variant="ghost" className="rounded-2xl bg-white shadow-md text-slate-600">
+                <Button size="icon" variant="ghost" className="rounded-md bg-white shadow-md text-slate-600">
                   <Settings2Icon className="size-5" />
                 </Button>
               </SheetTrigger>
@@ -376,290 +382,290 @@ const WorkoutBuilder = ({ onClose, embedded = false }: WorkoutBuilderProps) => {
           </header>
 
           <div className="flex-1 space-y-5 overflow-y-auto px-6 pb-40 pt-2">
-          <div className="space-y-2 rounded-[32px] border border-white/40 bg-white/90 p-5 shadow-[0_25px_50px_rgba(15,23,42,0.08)]">
-            <div className="space-y-2">
-              <div className="flex items-center gap-3">
+            <div className="space-y-2 rounded-lg border border-white/40 bg-white/90 p-5 shadow-[0_25px_50px_rgba(15,23,42,0.08)]">
+              <div className="space-y-2">
+                <div className="flex items-center gap-3">
+                  <Input
+                    ref={movementInputRef}
+                    placeholder="Mulai ketik gerakan favoritmu..."
+                    value={movementQuery || selectedMovementName || ""}
+                    onChange={(event) => {
+                      const value = event.target.value;
+                      setMovementQuery(value);
+                      setSelectedMovementName(null);
+                      workoutSession.setCurrentMovementId("");
+                    }}
+                    className="h-14 flex-1 rounded-md border-transparent bg-slate-50/80 px-4 text-lg font-semibold text-slate-900 placeholder:text-slate-400 focus:border-emerald-200 focus:ring-2 focus:ring-emerald-100"
+                  />
+                  {selectedMovementName && (
+                    <Button
+                      type="button"
+                      size="icon"
+                      variant="ghost"
+                      className="rounded-md bg-slate-100 text-slate-500"
+                      onClick={() => {
+                        workoutSession.setCurrentMovementId("");
+                        setSelectedMovementName("");
+                        setMovementQuery("");
+                        movementInputRef.current?.focus();
+                      }}
+                    >
+                      <Trash2Icon className="size-5" />
+                    </Button>
+                  )}
+                </div>
+                {movementQuery && (
+                  <div className="max-h-44 overflow-y-auto rounded-md border border-slate-100 bg-white shadow-xl">
+                    {!hasExactMovement && trimmedMovementQuery && (
+                      <button
+                        type="button"
+                        className="flex w-full items-center justify-between border-b border-slate-100 px-4 py-3 text-left text-sm font-medium text-slate-900 hover:bg-slate-50"
+                        onClick={handleAddCustomMovement}
+                      >
+                        <span>Tambah “{trimmedMovementQuery}”</span>
+                        <PlusIcon className="size-4" />
+                      </button>
+                    )}
+                    {filteredMovements.length === 0 && (
+                      <p className="px-3 py-4 text-center text-xs text-slate-400">Gerakan tidak ditemukan.</p>
+                    )}
+                    {filteredMovements.map((movement) => (
+                      <button
+                        type="button"
+                        key={movement.id}
+                        className="w-full border-b border-slate-100 px-4 py-3 text-left text-sm last:border-0 hover:bg-slate-50"
+                        onClick={() => handleSelectMovement(movement.id)}
+                      >
+                        <span className="block font-medium text-slate-900">{movement.name}</span>
+                        <span className="text-[9px] text-slate-500">{movement.description}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+                {!movementQuery && (
+                  <p className="text-[9px] text-slate-400">Mulai ketik untuk mencari gerakan favorit kamu.</p>
+                )}
+              </div>
+            </div>
+
+            <div className={`grid gap-4 ${showAddButton ? "grid-cols-4" : "grid-cols-3"}`}>
+              <div className="space-y-3 rounded-lg border border-white/60 bg-white/90  py-4 text-center shadow-[0_15px_35px_rgba(15,23,42,0.08)]">
+                <Label htmlFor="input-weight" className="text-[9px] font-semibold uppercase px-3 tracking-wide text-slate-400">
+                  kg
+                </Label>
                 <Input
-                  ref={movementInputRef}
-                  placeholder="Mulai ketik gerakan favoritmu..."
-                  value={movementQuery || selectedMovementName || ""}
-                  onChange={(event) => {
-                    const value = event.target.value;
-                    setMovementQuery(value);
-                    setSelectedMovementName(null);
-                    workoutSession.setCurrentMovementId("");
-                  }}
-                  className="h-14 flex-1 rounded-2xl border-transparent bg-slate-50/80 px-4 text-lg font-semibold text-slate-900 placeholder:text-slate-400 focus:border-emerald-200 focus:ring-2 focus:ring-emerald-100"
+                  id="input-weight"
+                  inputMode="decimal"
+                  maxLength={3}
+                  ref={weightInputRef}
+                  value={workoutSession.inputs.weight}
+                  onChange={(event) => handleAutoAdvance("weight", event.target.value)}
+                  onKeyDown={(event) => handleFieldKeyDown("weight", event)}
+                  className="h-10 rounded-md border-none shadow-none bg-white text-center text-lg font-semibold text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:ring-emerald-200"
+                  placeholder="--"
                 />
-                {selectedMovementName && (
+              </div>
+              <div className="space-y-3 rounded-lg border border-white/60 bg-white/90  py-4 text-center shadow-[0_15px_35px_rgba(15,23,42,0.08)]">
+                <Label htmlFor="input-reps" className="text-[9px] font-semibold uppercase px-3 tracking-wide text-slate-400">
+                  reps
+                </Label>
+                <Input
+                  id="input-reps"
+                  inputMode="numeric"
+                  maxLength={2}
+                  ref={repsInputRef}
+                  value={workoutSession.inputs.reps}
+                  onChange={(event) => handleAutoAdvance("reps", event.target.value)}
+                  onKeyDown={(event) => handleFieldKeyDown("reps", event)}
+                  className="h-10 rounded-md border-none shadow-none bg-white text-center text-lg font-semibold text-slate-900 placeholder:text-slate-400 focus-within:ring-0 focus:ring-emerald-200"
+                  placeholder="--"
+                />
+              </div>
+              <div className="space-y-3 rounded-lg border border-white/60 bg-white/90  py-4 text-center shadow-[0_15px_35px_rgba(15,23,42,0.08)]">
+                <Label htmlFor="input-rest" className="text-[9px] font-semibold uppercase px-3 tracking-wide text-slate-400">
+                  rest
+                </Label>
+                <Input
+                  id="input-rest"
+                  inputMode="numeric"
+                  maxLength={3}
+                  ref={restInputRef}
+                  value={workoutSession.inputs.rest}
+                  onChange={(event) => handleAutoAdvance("rest", event.target.value)}
+                  onKeyDown={(event) => handleFieldKeyDown("rest", event)}
+                  className="h-10 rounded-md border-none shadow-none bg-white text-center text-lg font-semibold text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:ring-emerald-200"
+                  placeholder="--"
+                />
+              </div>
+              {showAddButton && (
+                <div className="flex items-center justify-center">
                   <Button
                     type="button"
                     size="icon"
-                    variant="ghost"
-                    className="rounded-2xl bg-slate-100 text-slate-500"
-                    onClick={() => {
-                      workoutSession.setCurrentMovementId("");
-                      setSelectedMovementName("");
-                      setMovementQuery("");
-                      movementInputRef.current?.focus();
-                    }}
+                    variant="secondary"
+                    className="h-full w-full rounded-lg bg-gradient-to-r bg-indigo-600  text-white shadow-[0_20px_40px_rgba(79,70,229,0.35)]"
+                    onClick={handleAddSet}
+                    ref={addSetButtonRef}
                   >
-                    <Trash2Icon className="size-5" />
+                    <PlusIcon className="size-6" />
                   </Button>
-                )}
-              </div>
-              {movementQuery && (
-                <div className="max-h-44 overflow-y-auto rounded-2xl border border-slate-100 bg-white shadow-xl">
-                  {!hasExactMovement && trimmedMovementQuery && (
-                    <button
-                      type="button"
-                      className="flex w-full items-center justify-between border-b border-slate-100 px-4 py-3 text-left text-sm font-medium text-slate-900 hover:bg-slate-50"
-                      onClick={handleAddCustomMovement}
-                    >
-                      <span>Tambah “{trimmedMovementQuery}”</span>
-                      <PlusIcon className="size-4" />
-                    </button>
-                  )}
-                  {filteredMovements.length === 0 && (
-                    <p className="px-3 py-4 text-center text-xs text-slate-400">Gerakan tidak ditemukan.</p>
-                  )}
-                  {filteredMovements.map((movement) => (
-                    <button
-                      type="button"
-                      key={movement.id}
-                      className="w-full border-b border-slate-100 px-4 py-3 text-left text-sm last:border-0 hover:bg-slate-50"
-                      onClick={() => handleSelectMovement(movement.id)}
-                    >
-                      <span className="block font-medium text-slate-900">{movement.name}</span>
-                      <span className="text-xs text-slate-500">{movement.description}</span>
-                    </button>
-                  ))}
                 </div>
               )}
-              {!movementQuery && (
-                <p className="text-xs text-slate-400">Mulai ketik untuk mencari gerakan favorit kamu.</p>
-              )}
             </div>
-          </div>
 
-          <div className={`grid gap-4 ${showAddButton ? "grid-cols-4" : "grid-cols-3"}`}>
-            <div className="space-y-3 rounded-[26px] border border-white/60 bg-white/90 px-3 py-4 text-center shadow-[0_15px_35px_rgba(15,23,42,0.08)]">
-              <Label htmlFor="input-weight" className="text-xs font-semibold uppercase tracking-wide text-slate-400">
-                kg
-              </Label>
-              <Input
-                id="input-weight"
-                inputMode="decimal"
-                maxLength={3}
-                ref={weightInputRef}
-                value={workoutSession.inputs.weight}
-                onChange={(event) => handleAutoAdvance("weight", event.target.value)}
-                onKeyDown={(event) => handleFieldKeyDown("weight", event)}
-                className="h-10 rounded-2xl border-none bg-slate-50 text-center text-lg font-semibold text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:ring-emerald-200"
-                placeholder="--"
-              />
-            </div>
-            <div className="space-y-3 rounded-[26px] border border-white/60 bg-white/90 px-3 py-4 text-center shadow-[0_15px_35px_rgba(15,23,42,0.08)]">
-              <Label htmlFor="input-reps" className="text-xs font-semibold uppercase tracking-wide text-slate-400">
-                reps
-              </Label>
-              <Input
-                id="input-reps"
-                inputMode="numeric"
-                maxLength={2}
-                ref={repsInputRef}
-                value={workoutSession.inputs.reps}
-                onChange={(event) => handleAutoAdvance("reps", event.target.value)}
-                onKeyDown={(event) => handleFieldKeyDown("reps", event)}
-                className="h-10 rounded-2xl border-none bg-slate-50 text-center text-lg font-semibold text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:ring-emerald-200"
-                placeholder="--"
-              />
-            </div>
-            <div className="space-y-3 rounded-[26px] border border-white/60 bg-white/90 px-3 py-4 text-center shadow-[0_15px_35px_rgba(15,23,42,0.08)]">
-              <Label htmlFor="input-rest" className="text-xs font-semibold uppercase tracking-wide text-slate-400">
-                rest
-              </Label>
-              <Input
-                id="input-rest"
-                inputMode="numeric"
-                maxLength={3}
-                ref={restInputRef}
-                value={workoutSession.inputs.rest}
-                onChange={(event) => handleAutoAdvance("rest", event.target.value)}
-                onKeyDown={(event) => handleFieldKeyDown("rest", event)}
-                className="h-10 rounded-2xl border-none bg-slate-50 text-center text-lg font-semibold text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:ring-emerald-200"
-                placeholder="--"
-              />
-            </div>
-            {showAddButton && (
-              <div className="flex items-center justify-center">
-                <Button
-                  type="button"
-                  size="icon"
-                  variant="secondary"
-                  className="h-16 w-full rounded-[26px] bg-gradient-to-r from-indigo-500 to-sky-500 text-white shadow-[0_20px_40px_rgba(79,70,229,0.35)]"
-                  onClick={handleAddSet}
-                  ref={addSetButtonRef}
-                >
-                  <PlusIcon className="size-6" />
-                </Button>
-              </div>
-            )}
-          </div>
-
-          <div className="rounded-[32px] border border-white/40 bg-white/95 p-4 shadow-[0_20px_40px_rgba(15,23,42,0.08)]">
-            <div className="mb-4 flex items-center justify-between">
-              <div>
-                <p className="text-sm font-semibold text-slate-900">Set yang siap disimpan</p>
-                <p className="text-xs text-slate-400">Atur ulang set sebelum simpan.</p>
-              </div>
-              <div className="relative" ref={setMenuRef}>
-                <Button
-                  size="icon"
-                  variant="ghost"
-                  className="rounded-full bg-slate-50 text-slate-500"
-                  onClick={() => setSetMenuOpen((prev) => !prev)}
-                >
-                  <MoreVerticalIcon className="size-5" />
-                </Button>
-                {setMenuOpen && (
-                  <div className="absolute right-0 top-11 z-20 w-48 rounded-2xl border border-slate-100 bg-white p-2 text-sm shadow-xl">
-                    <button
-                      className="w-full rounded-xl px-4 py-2 text-left text-slate-700 hover:bg-slate-50"
-                      onClick={() => {
-                        setSetMenuOpen(false);
-                        handleSaveMovement();
-                      }}
-                    >
-                      Simpan gerakan
-                    </button>
-                  </div>
-                )}
-              </div>
-            </div>
-            <div className="space-y-2">
-              {workoutSession.currentSets.map((set, index) => {
-                const color = stagedSetColors[index % stagedSetColors.length];
-                return (
-                  <div
-                    key={set.id}
-                    className="flex items-center justify-between rounded-[24px] px-4 py-3 text-sm font-semibold"
-                    style={{ backgroundColor: color }}
-                  >
-                    <span className="text-slate-800">
-                      {set.weight}kg · {set.reps} reps · {set.rest} detik
-                    </span>
-                    <button
-                      type="button"
-                      className="text-xs font-semibold uppercase tracking-wide text-slate-500"
-                      onClick={() => workoutSession.removeSet(set.id)}
-                    >
-                      Hapus
-                    </button>
-                  </div>
-                );
-              })}
-              {workoutSession.currentSets.length === 0 && (
-                <p className="rounded-2xl bg-slate-50 px-4 py-3 text-xs text-slate-400">
-                  Belum ada set yang siap.
-                </p>
-              )}
-            </div>
-          </div>
-
-          {workoutSession.stagedMovements.length > 0 && (
-            <div className="space-y-4 rounded-[32px]  p-5 shadow-[0_25px_50px_rgba(15,23,42,0.08)]">
-              <div className="flex items-center justify-between">
+            <div className="rounded-lg border border-white/40 bg-white/95 p-4 shadow-[0_20px_40px_rgba(15,23,42,0.08)]">
+              <div className="mb-4 flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-semibold text-slate-900">Gerakan di sesi ini</p>
-                  <p className="text-xs text-slate-400">Review progres sebelum simpan.</p>
+                  <p className="text-sm font-semibold text-slate-900">Set yang siap disimpan</p>
+                  <p className="text-[9px] text-slate-400">Atur ulang set sebelum simpan.</p>
+                </div>
+                <div className="relative" ref={setMenuRef}>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="rounded-full bg-slate-50 text-slate-500"
+                    onClick={() => setSetMenuOpen((prev) => !prev)}
+                  >
+                    <MoreVerticalIcon className="size-5" />
+                  </Button>
+                  {setMenuOpen && (
+                    <div className="absolute right-0 top-11 z-20 w-48 rounded-md border border-slate-100 bg-white p-2 text-sm shadow-xl">
+                      <button
+                        className="w-full rounded-xl px-4 py-2 text-left text-slate-700 hover:bg-slate-50"
+                        onClick={() => {
+                          setSetMenuOpen(false);
+                          handleSaveMovement();
+                        }}
+                      >
+                        Simpan gerakan
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
-              <div className="space-y-4">
-                {workoutSession.stagedMovements.map((movement) => {
-                  const totalReps = movement.sets.reduce((acc, set) => acc + set.reps, 0);
-                  const totalRest = movement.sets.reduce((acc, set) => acc + set.rest, 0);
-                  const consistentWeight = movement.sets.every(
-                    (set) => set.weight === movement.sets[0]?.weight
-                  );
-                  const minWeight = movement.sets.reduce(
-                    (min, set) => Math.min(min, set.weight),
-                    movement.sets[0]?.weight ?? 0
-                  );
-                  const maxWeight = movement.sets.reduce(
-                    (max, set) => Math.max(max, set.weight),
-                    movement.sets[0]?.weight ?? 0
-                  );
-                  const suggestion = movement.sets.length >= 4 && consistentWeight;
-
+              <div className="space-y-2">
+                {workoutSession.currentSets.map((set, index) => {
+                  const color = stagedSetColors[index % stagedSetColors.length];
                   return (
                     <div
-                      key={movement.id}
-                      className="rounded-[28px] border border-slate-100  p-4 text-sm text-slate-700 shadow-[0_20px_40px_rgba(15,23,42,0.06)]"
+                      key={set.id}
+                      className="flex items-center justify-between rounded-[24px] px-4 py-3 text-sm font-semibold"
+                      style={{ backgroundColor: color }}
                     >
-                      <div className="mb-3 flex items-center justify-between">
-                        <div>
-                          <p className="text-xl font-semibold text-slate-900">{movement.name}</p>
-                          
-                        </div>
-                        <button
-                          type="button"
-                          className="text-xs font-semibold uppercase tracking-wide text-slate-400"
-                          onClick={() => workoutSession.removeMovement(movement.id)}
-                        >
-                          Hapus
-                        </button>
-                      </div>
-                      <div className="grid grid-cols-2 gap-3  text-xs font-semibold text-slate-500">
-                        <div>
-                          <p className="text-[11px] uppercase tracking-wide text-slate-400">
-                            Total Set
-                          </p>
-                          <p className="text-sm text-slate-900">{movement.sets.length}</p>
-                        </div>
-                        <div>
-                          <p className="text-[11px] uppercase tracking-wide text-slate-400">
-                            Total Reps
-                          </p>
-                          <p className="text-sm text-slate-900">{totalReps}</p>
-                        </div>
-                        <div>
-                          <p className="text-[11px] uppercase tracking-wide text-slate-400">
-                            Rentang Beban
-                          </p>
-                          <p className="text-sm text-slate-900">
-                            {minWeight}kg{consistentWeight ? "" : ` – ${maxWeight}kg`}
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-[11px] uppercase tracking-wide text-slate-400">
-                            Total Rest
-                          </p>
-                          <p className="text-sm text-slate-900">{totalRest} detik</p>
-                        </div>
-                      </div>
-                      {suggestion && (
-                        <div className="mt-3 inline-flex items-center gap-2   py-2 text-xs font-semibold text-indigo-600 ">
-                          <span className="inline-flex size-6 items-center justify-center rounded-full bg-amber-100 text-amber-600">
-                            ↑
-                          </span>
-                          Level Up: +2.5kg suggestion
-                        </div>
-                      )}
+                      <span className="text-slate-800">
+                        {set.weight}kg · {set.reps} reps · {set.rest} detik
+                      </span>
+                      <button
+                        type="button"
+                        className="text-[9px] font-semibold uppercase tracking-wide text-slate-500"
+                        onClick={() => workoutSession.removeSet(set.id)}
+                      >
+                        Hapus
+                      </button>
                     </div>
                   );
                 })}
+                {workoutSession.currentSets.length === 0 && (
+                  <p className="rounded-md bg-slate-50 px-4 py-3 text-xs text-slate-400">
+                    Belum ada set yang siap.
+                  </p>
+                )}
               </div>
             </div>
-          )}
-        </div>
-        <div className="fixed inset-x-0 bottom-0 z-40 bg-gradient-to-b from-transparent to-white px-6 pb-8 pt-6">
-          <Button
-            className="group flex h-14 w-full items-center justify-center gap-3 rounded-full bg-indigo-600 text-base font-semibold text-white shadow-[0_30px_60px_rgba(79,70,229,0.35)]"
-            onClick={handleSaveSession}
-          >
-            Simpan Sesi
-          </Button>
+
+            {workoutSession.stagedMovements.length > 0 && (
+              <div className="space-y-4 rounded-[32px]  p-5 shadow-[0_25px_50px_rgba(15,23,42,0.08)]">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-semibold text-slate-900">Gerakan di sesi ini</p>
+                    <p className="text-[9px] text-slate-400">Review progres sebelum simpan.</p>
+                  </div>
+                </div>
+                <div className="space-y-4">
+                  {workoutSession.stagedMovements.map((movement) => {
+                    const totalReps = movement.sets.reduce((acc, set) => acc + set.reps, 0);
+                    const totalRest = movement.sets.reduce((acc, set) => acc + set.rest, 0);
+                    const consistentWeight = movement.sets.every(
+                      (set) => set.weight === movement.sets[0]?.weight
+                    );
+                    const minWeight = movement.sets.reduce(
+                      (min, set) => Math.min(min, set.weight),
+                      movement.sets[0]?.weight ?? 0
+                    );
+                    const maxWeight = movement.sets.reduce(
+                      (max, set) => Math.max(max, set.weight),
+                      movement.sets[0]?.weight ?? 0
+                    );
+                    const suggestion = movement.sets.length >= 4 && consistentWeight;
+
+                    return (
+                      <div
+                        key={movement.id}
+                        className="rounded-[28px] border border-slate-100  p-4 text-sm text-slate-700 shadow-[0_20px_40px_rgba(15,23,42,0.06)]"
+                      >
+                        <div className="mb-3 flex items-center justify-between">
+                          <div>
+                            <p className="text-xl font-semibold text-slate-900">{movement.name}</p>
+
+                          </div>
+                          <button
+                            type="button"
+                            className="text-[9px] font-semibold uppercase tracking-wide text-slate-400"
+                            onClick={() => workoutSession.removeMovement(movement.id)}
+                          >
+                            Hapus
+                          </button>
+                        </div>
+                        <div className="grid grid-cols-2 gap-3  text-xs font-semibold text-slate-500">
+                          <div>
+                            <p className="text-[11px] uppercase tracking-wide text-slate-400">
+                              Total Set
+                            </p>
+                            <p className="text-sm text-slate-900">{movement.sets.length}</p>
+                          </div>
+                          <div>
+                            <p className="text-[11px] uppercase tracking-wide text-slate-400">
+                              Total Reps
+                            </p>
+                            <p className="text-sm text-slate-900">{totalReps}</p>
+                          </div>
+                          <div>
+                            <p className="text-[11px] uppercase tracking-wide text-slate-400">
+                              Rentang Beban
+                            </p>
+                            <p className="text-sm text-slate-900">
+                              {minWeight}kg{consistentWeight ? "" : ` – ${maxWeight}kg`}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-[11px] uppercase tracking-wide text-slate-400">
+                              Total Rest
+                            </p>
+                            <p className="text-sm text-slate-900">{totalRest} detik</p>
+                          </div>
+                        </div>
+                        {suggestion && (
+                          <div className="mt-3 inline-flex items-center gap-2   py-2 text-xs font-semibold text-indigo-600 ">
+                            <span className="inline-flex size-6 items-center justify-center rounded-full bg-amber-100 text-amber-600">
+                              ↑
+                            </span>
+                            Level Up: +2.5kg suggestion
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </div>
+          <div className="fixed inset-x-0 bottom-0 z-40 bg-gradient-to-b from-transparent to-white px-6 pb-8 pt-6">
+            <Button
+              className="group flex h-14 w-full items-center justify-center gap-3 rounded-full bg-indigo-600 text-base font-semibold text-white shadow-[0_30px_60px_rgba(79,70,229,0.35)]"
+              onClick={handleSaveSession}
+            >
+              Simpan Sesi
+            </Button>
           </div>
         </div>
       </div>
