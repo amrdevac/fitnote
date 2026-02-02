@@ -70,7 +70,7 @@ export default function RootLayout({
             <ProgressBarProviders>
               {children}
               <ServiceWorkerProvider />
-              <Toaster position="top-center" />
+              <Toaster />
             </ProgressBarProviders>
           </QueryProvider>
         </ThemeProvider>
