@@ -30,7 +30,11 @@ export const metadata: Metadata = {
     ],
   },
   manifest: "/manifest.webmanifest",
-  themeColor: "#0f172a",
+  themeColor: "#F1FBF6",
+  other: {
+    "navigation-bar-color": "#ffffff",
+    "msapplication-navbutton-color": "#ffffff",
+  },
   openGraph: {
     type: "website",
     title: "FitNote – Mobile Gym Tracker",

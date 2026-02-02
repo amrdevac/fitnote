@@ -47,8 +47,8 @@ export default function manifest(): ManifestWithSplash {
     scope,
     display: "standalone",
     orientation: "portrait",
-    background_color: "#0f172a",
-    theme_color: "#0f172a",
+    background_color: "#F1FBF6",
+    theme_color: "#F1FBF6",
     display_override: ["standalone"],
     icons: [
       {
