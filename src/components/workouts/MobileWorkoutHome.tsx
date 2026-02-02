@@ -551,13 +551,13 @@ const MobileWorkoutHome = ({ onOpenBuilder }: MobileWorkoutHomeProps) => {
                         />
                       ) : (
                         <CardTitle
-                          className="mt-2 text-2xl font-semibold"
+                          className="mt-2 text-2xl font-semibold text-slate-800"
                           onDoubleClick={(event) => {
                             event.stopPropagation();
                             startEditingTitle(session.id, sessionTitle);
                           }}
                         >
-                          {sessionTitle}
+                          {sessionTitle} 
                         </CardTitle>
                       )}
                       <p className="text-sm text-slate-400">
