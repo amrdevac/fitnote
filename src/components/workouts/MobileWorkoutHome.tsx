@@ -22,12 +22,16 @@ import {
   BarChart3,
   User2,
   TrendingUp,
+  Download,
+  Upload,
 } from "lucide-react";
 import { Card, CardHeader, CardTitle } from "@/ui/card";
 import { Button } from "@/ui/button";
 import useWorkoutSession from "@/hooks/useWorkoutSession";
 import type { WorkoutMovement } from "@/types/workout";
 import { getDefaultSessionTitle } from "@/lib/sessionTitle";
+import { exportFitnoteBackup, importFitnoteBackup } from "@/lib/indexedDb/backup";
+import { useToast } from "@/ui/use-toast";
 
 function formatDate(dateIso: string) {
   const formatter = new Intl.DateTimeFormat("id-ID", {
@@ -77,6 +81,10 @@ const MobileWorkoutHome = ({ onOpenBuilder }: MobileWorkoutHomeProps) => {
   const [editingTitle, setEditingTitle] = useState("");
   const [isRenamingTitle, setIsRenamingTitle] = useState(false);
   const titleInputRef = useRef<HTMLInputElement | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const { toast } = useToast();
+  const [isExporting, setIsExporting] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
 
   useEffect(() => {
     if (typeof document === "undefined") return;
@@ -147,6 +155,70 @@ const MobileWorkoutHome = ({ onOpenBuilder }: MobileWorkoutHomeProps) => {
     });
     if (willExpand) {
       setScrollTargetSession(sessionId);
+    }
+  };
+
+  const handleExportBackup = async () => {
+    if (isExporting) return;
+    setIsExporting(true);
+    try {
+      const payload = await exportFitnoteBackup();
+      const blob = new Blob([JSON.stringify(payload, null, 2)], {
+        type: "application/json",
+      });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `fitnote-backup-${new Date().toISOString().slice(0, 10)}.json`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+      toast({ title: "Backup tersimpan", variant: "success" });
+    } catch (error) {
+      console.error("Failed to export backup", error);
+      toast({
+        title: "Gagal export",
+        description: "Coba lagi beberapa saat.",
+        variant: "error",
+      });
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  const handleImportClick = () => {
+    if (isImporting) return;
+    const confirmed = window.confirm(
+      "Import akan menimpa data lokal kamu. Lanjutkan?"
+    );
+    if (!confirmed) return;
+    fileInputRef.current?.click();
+  };
+
+  const handleImportFile = async (event: ReactChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+    setIsImporting(true);
+    try {
+      const text = await file.text();
+      const payload = JSON.parse(text);
+      await importFitnoteBackup(payload);
+      window.dispatchEvent(new Event("fitnote:sessions-updated"));
+      toast({ title: "Import berhasil", variant: "success" });
+      setTimeout(() => {
+        window.location.reload();
+      }, 300);
+    } catch (error) {
+      console.error("Failed to import backup", error);
+      toast({
+        title: "Gagal import",
+        description: "Pastikan file JSON sesuai format backup FitNote.",
+        variant: "error",
+      });
+    } finally {
+      setIsImporting(false);
     }
   };
 
@@ -448,15 +520,44 @@ const MobileWorkoutHome = ({ onOpenBuilder }: MobileWorkoutHomeProps) => {
                 {visibleSessions.length} sesi · {totalMovements} gerakan
               </p>
             </div>
-            <button
-              type="button"
-              onClick={() => router.push("/archive")}
-              className="inline-flex size-12 items-center justify-center rounded-2xl bg-white text-slate-600 shadow-lg shadow-emerald-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-200"
-            >
-              <CalendarDays className="size-5" />
-            </button>
+            <div className="flex flex-col items-end gap-2">
+              <button
+                type="button"
+                onClick={() => router.push("/archive")}
+                className="inline-flex size-12 items-center justify-center rounded-2xl bg-white text-slate-600 shadow-lg shadow-emerald-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-200"
+              >
+                <CalendarDays className="size-5" />
+              </button>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={handleExportBackup}
+                  className="inline-flex size-10 items-center justify-center rounded-2xl bg-white text-slate-600 shadow-md shadow-slate-200/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-200 disabled:opacity-60"
+                  disabled={isExporting}
+                  aria-label="Export backup"
+                >
+                  <Download className="size-4" />
+                </button>
+                <button
+                  type="button"
+                  onClick={handleImportClick}
+                  className="inline-flex size-10 items-center justify-center rounded-2xl bg-white text-slate-600 shadow-md shadow-slate-200/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-200 disabled:opacity-60"
+                  disabled={isImporting}
+                  aria-label="Import backup"
+                >
+                  <Upload className="size-4" />
+                </button>
+              </div>
+            </div>
           </div>
         </header>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="application/json"
+          className="hidden"
+          onChange={handleImportFile}
+        />
 
         <div
           className="flex flex-col gap-5 px-4 pb-12"
