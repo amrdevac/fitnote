@@ -84,6 +84,7 @@ export default function Home() {
       <main>
         <MobileWorkoutHome onOpenBuilder={openBuilder} />
       </main>
+      
       {isTimerOpen && (
         <ExerciseTimerManager embedded onClose={closeTimer} />
       )}
