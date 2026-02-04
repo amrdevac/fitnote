@@ -1,4 +1,4 @@
-const CACHE_VERSION = "v0.7.6";
+const CACHE_VERSION = "v0.7.8";
 const CACHE_NAME = `fitnote-cache-${CACHE_VERSION}`;
 const DATA_CACHE_NAME = `fitnote-data-cache-${CACHE_VERSION}`;
 const OFFLINE_URL = "/offline.html";
