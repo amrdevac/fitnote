@@ -672,15 +672,7 @@ const WorkoutBuilder = ({ onClose, embedded = false }: WorkoutBuilderProps) => {
           </div>
           <div className="mt-auto px-6 pb-8">
             {isPlayerRunning ? (
-              <div className="flex justify-end">
-                <Button
-                  className="size-14 rounded-full bg-indigo-600 text-white shadow-[0_30px_60px_rgba(79,70,229,0.35)]"
-                  onClick={handleSaveSession}
-                >
-                  <SaveIcon className="size-6" />
-                  <span className="sr-only">Simpan Sesi</span>
-                </Button>
-              </div>
+              <div className="h-14" />
             ) : (
               <Button
                 className="group flex h-14 w-full items-center justify-center gap-3 rounded-full bg-indigo-600 text-base font-semibold text-white shadow-[0_30px_60px_rgba(79,70,229,0.35)]"
@@ -693,6 +685,15 @@ const WorkoutBuilder = ({ onClose, embedded = false }: WorkoutBuilderProps) => {
 
         </div>
       </div>
+      {isPlayerRunning && (
+        <Button
+          className="fixed bottom-[calc(var(--player-offset,0px)+50px)] right-5 z-50 size-14 rounded-full bg-indigo-600 text-white shadow-[0_30px_60px_rgba(79,70,229,0.35)]"
+          onClick={handleSaveSession}
+        >
+          <SaveIcon className="size-6" />
+          <span className="sr-only">Simpan Sesi</span>
+        </Button>
+      )}
     </div>
   );
 };
