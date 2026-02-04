@@ -8,7 +8,6 @@ import {
   HourglassIcon,
   PlayIcon,
   PlusIcon,
-  XIcon,
   MoreVerticalIcon,
   PencilIcon,
 } from "lucide-react";
@@ -16,10 +15,12 @@ import { Button } from "@/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/ui/card";
 import { Input } from "@/ui/input";
 import { Label } from "@/ui/label";
+import { useToast } from "@/ui/use-toast";
 import useExerciseTimers from "@/hooks/useExerciseTimers";
 import { useTabataPlayerStore } from "@/store/tabataPlayer";
 import { useTimerSettings } from "@/store/timerSettings";
 import PageHeader from "@/components/shared/PageHeader";
+import SettingsSheet from "@/components/shared/SettingsSheet";
 
 const secondsToLabel = (totalSeconds: number) => {
   const minutes = Math.floor(totalSeconds / 60);
@@ -51,10 +52,15 @@ const ExerciseTimerList = ({ onClose, embedded = false }: ExerciseTimerListProps
   const timerStore = useExerciseTimers();
   const loadTimer = useTabataPlayerStore((state) => state.loadTimer);
   const playTimer = useTabataPlayerStore((state) => state.play);
+  const playerStatus = useTabataPlayerStore((state) => state.status);
+  const currentTimerId = useTabataPlayerStore((state) => state.currentTimerId);
   const leadInSeconds = useTimerSettings((state) => state.leadInSeconds);
   const setLeadInSeconds = useTimerSettings((state) => state.setLeadInSeconds);
   const vibrationMs = useTimerSettings((state) => state.vibrationMs);
   const setVibrationMs = useTimerSettings((state) => state.setVibrationMs);
+  const wakeLockEnabled = useTimerSettings((state) => state.wakeLockEnabled);
+  const setWakeLockEnabled = useTimerSettings((state) => state.setWakeLockEnabled);
+  const { toast } = useToast();
   const containerRef = useRef<HTMLDivElement>(null);
   const swipeStartX = useRef<number | null>(null);
   const swipeAnimationRef = useRef<number | null>(null);
@@ -241,6 +247,13 @@ const ExerciseTimerList = ({ onClose, embedded = false }: ExerciseTimerListProps
                           size="icon"
                           className="text-slate-500 hover:text-emerald-600"
                           onClick={() => {
+                            if (playerStatus === "running" && currentTimerId !== timer.id) {
+                              toast({
+                                title: "Timer lain sedang berjalan",
+                                description: "Hentikan timer aktif terlebih dahulu.",
+                              });
+                              return;
+                            }
                             loadTimer(timer);
                             playTimer();
                           }}
@@ -305,78 +318,91 @@ const ExerciseTimerList = ({ onClose, embedded = false }: ExerciseTimerListProps
         </div>
       </div>
 
-      {settingsOpen && (
-        <div className="fixed inset-0 z-50 flex items-end bg-slate-900/40">
-          <div className="w-full rounded-t-[28px] bg-white px-6 pb-8 pt-5">
-            <div className="flex items-center justify-between">
-              <p className="text-base font-semibold text-slate-900">Pengaturan Timer</p>
-              <Button variant="ghost" size="icon" onClick={() => setSettingsOpen(false)}>
-                <XIcon className="size-5" />
-              </Button>
-            </div>
-            <div className="mt-5">
-              <Label className="text-xs uppercase text-slate-500">Aba-aba global (mm:ss)</Label>
-              <div className="mt-2 flex items-center gap-2">
-                <Input
-                  inputMode="numeric"
-                  value={leadInMinutes}
-                  onChange={(event) => setLeadInMinutes(sanitizeTimeInput(event.target.value))}
-                  onBlur={() => setLeadInMinutes(padTime(leadInMinutes))}
-                  className="w-16 text-center text-lg font-semibold"
-                />
-                <span className="text-lg font-semibold text-slate-400">:</span>
-                <Input
-                  inputMode="numeric"
-                  value={leadInSecs}
-                  onChange={(event) => setLeadInSecs(sanitizeTimeInput(event.target.value))}
-                  onBlur={() => setLeadInSecs(padTime(leadInSecs))}
-                  className="w-16 text-center text-lg font-semibold"
-                />
-              </div>
-            </div>
-            <div className="mt-5">
-              <Label className="text-xs uppercase text-slate-500">Durasi getar (ms)</Label>
-              <div className="mt-2 flex items-center gap-2">
-                <Input
-                  inputMode="numeric"
-                  value={vibrationInput}
-                  onChange={(event) =>
-                    setVibrationInput(event.target.value.replace(/\D/g, "").slice(0, 4))
-                  }
-                  onBlur={() =>
-                    setVibrationInput(
-                      Math.max(0, Number.parseInt(vibrationInput || "0", 10)).toString()
-                    )
-                  }
-                  className="w-24 text-center text-lg font-semibold"
-                />
-                <span className="text-xs text-slate-400">0 untuk nonaktif</span>
-              </div>
-            </div>
-            <div className="mt-6 flex gap-2">
-              <Button variant="outline" className="flex-1" onClick={() => setSettingsOpen(false)}>
-                Batal
-              </Button>
-              <Button
-                className="flex-1"
-                onClick={() => {
-                  const seconds = parseTime(leadInMinutes, leadInSecs);
-                  if (!Number.isNaN(seconds)) {
-                    setLeadInSeconds(seconds);
-                  }
-                  const vibrationValue = Number.parseInt(vibrationInput || "0", 10);
-                  if (!Number.isNaN(vibrationValue)) {
-                    setVibrationMs(vibrationValue);
-                  }
-                  setSettingsOpen(false);
-                }}
-              >
-                Simpan
-              </Button>
-            </div>
+      <SettingsSheet
+        title="Pengaturan Timer"
+        open={settingsOpen}
+        onOpenChange={setSettingsOpen}
+      >
+        <div className="mt-2">
+          <Label className="text-xs uppercase text-slate-500">Aba-aba global (mm:ss)</Label>
+          <div className="mt-2 flex items-center gap-2">
+            <Input
+              inputMode="numeric"
+              value={leadInMinutes}
+              onChange={(event) => setLeadInMinutes(sanitizeTimeInput(event.target.value))}
+              onBlur={() => setLeadInMinutes(padTime(leadInMinutes))}
+              className="w-16 text-center text-lg font-semibold"
+            />
+            <span className="text-lg font-semibold text-slate-400">:</span>
+            <Input
+              inputMode="numeric"
+              value={leadInSecs}
+              onChange={(event) => setLeadInSecs(sanitizeTimeInput(event.target.value))}
+              onBlur={() => setLeadInSecs(padTime(leadInSecs))}
+              className="w-16 text-center text-lg font-semibold"
+            />
           </div>
         </div>
-      )}
+        <div className="mt-5">
+          <Label className="text-xs uppercase text-slate-500">Durasi getar (ms)</Label>
+          <div className="mt-2 flex items-center gap-2">
+            <Input
+              inputMode="numeric"
+              value={vibrationInput}
+              onChange={(event) =>
+                setVibrationInput(event.target.value.replace(/\D/g, "").slice(0, 4))
+              }
+              onBlur={() =>
+                setVibrationInput(
+                  Math.max(0, Number.parseInt(vibrationInput || "0", 10)).toString()
+                )
+              }
+              className="w-24 text-center text-lg font-semibold"
+            />
+            <span className="text-xs text-slate-400">0 untuk nonaktif</span>
+          </div>
+        </div>
+        <div className="mt-5 flex items-center justify-between rounded-xl border border-slate-200 px-4 py-3">
+          <div>
+            <p className="text-sm font-medium text-slate-800">Wake lock</p>
+            <p className="text-xs text-slate-400">Agar layar tetap menyala saat timer berjalan.</p>
+          </div>
+          <button
+            type="button"
+            role="switch"
+            aria-checked={wakeLockEnabled}
+            onClick={() => setWakeLockEnabled(!wakeLockEnabled)}
+            className={`relative inline-flex h-6 w-11 items-center rounded-full transition ${wakeLockEnabled ? "bg-slate-900" : "bg-slate-300"
+              }`}
+          >
+            <span
+              className={`inline-block h-5 w-5 transform rounded-full bg-white transition ${wakeLockEnabled ? "translate-x-5" : "translate-x-1"
+                }`}
+            />
+          </button>
+        </div>
+        <div className="mt-6 flex gap-2">
+          <Button variant="outline" className="flex-1" onClick={() => setSettingsOpen(false)}>
+            Batal
+          </Button>
+          <Button
+            className="flex-1"
+            onClick={() => {
+              const seconds = parseTime(leadInMinutes, leadInSecs);
+              if (!Number.isNaN(seconds)) {
+                setLeadInSeconds(seconds);
+              }
+              const vibrationValue = Number.parseInt(vibrationInput || "0", 10);
+              if (!Number.isNaN(vibrationValue)) {
+                setVibrationMs(vibrationValue);
+              }
+              setSettingsOpen(false);
+            }}
+          >
+            Simpan
+          </Button>
+        </div>
+      </SettingsSheet>
     </div>
   );
 };

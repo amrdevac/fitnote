@@ -7,11 +7,11 @@ import { useToast } from "@/ui/use-toast";
 import { Button } from "@/ui/button";
 import { Input } from "@/ui/input";
 import { Label } from "@/ui/label";
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/ui/sheet";
 import useWorkoutSession from "@/hooks/useWorkoutSession";
 import preferencesDb, { defaultPreferences } from "@/lib/indexedDb/preferences";
 import { useTabataPlayerStore } from "@/store/tabataPlayer";
 import PageHeader from "@/components/shared/PageHeader";
+import SettingsSheet from "@/components/shared/SettingsSheet";
 
 const Toggle = ({
   checked,
@@ -349,30 +349,26 @@ const WorkoutBuilder = ({ onClose, embedded = false }: WorkoutBuilderProps) => {
               onSettings={() => setSettingsOpen(true)}
               backPosition="left"
             />
-            <Sheet open={settingsOpen} onOpenChange={setSettingsOpen}>
-              <SheetContent
-                side="bottom"
-                className="rounded-t-3xl border-none bg-white px-6 pb-8 pt-6 text-slate-900"
-              >
-                <SheetHeader className="mb-4 px-0">
-                  <SheetTitle>Pengaturan Aktivitas</SheetTitle>
-                </SheetHeader>
-                <div className="space-y-2">
-                  <label className="flex items-center justify-between rounded-xl border border-slate-200 px-4 py-3">
-                    <span className="text-sm font-medium text-slate-800">
-                      Tampilkan tombol tambah set
-                    </span>
-                    <Toggle checked={showAddButton} onChange={setShowAddButton} />
-                  </label>
-                  <label className="flex items-center justify-between rounded-xl border border-slate-200 px-4 py-3">
-                    <span className="text-sm font-medium text-slate-800">
-                      Fokus otomatis ke input gerakan
-                    </span>
-                    <Toggle checked={focusInputOnOpen} onChange={setFocusInputOnOpen} />
-                  </label>
-                </div>
-              </SheetContent>
-            </Sheet>
+            <SettingsSheet
+              title="Pengaturan Aktivitas"
+              open={settingsOpen}
+              onOpenChange={setSettingsOpen}
+            >
+              <div className="space-y-2">
+                <label className="flex items-center justify-between rounded-xl border border-slate-200 px-4 py-3">
+                  <span className="text-sm font-medium text-slate-800">
+                    Tampilkan tombol tambah set
+                  </span>
+                  <Toggle checked={showAddButton} onChange={setShowAddButton} />
+                </label>
+                <label className="flex items-center justify-between rounded-xl border border-slate-200 px-4 py-3">
+                  <span className="text-sm font-medium text-slate-800">
+                    Fokus otomatis ke input gerakan
+                  </span>
+                  <Toggle checked={focusInputOnOpen} onChange={setFocusInputOnOpen} />
+                </label>
+              </div>
+            </SettingsSheet>
           </div>
 
           <div className="flex flex-col   space-y-5 overflow-y-auto px-6 pb-40 pt-2  ">

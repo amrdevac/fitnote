@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   PlusIcon,
@@ -91,32 +91,68 @@ type TimeInputProps = {
   value: TimeValue;
   onChange: (next: TimeValue) => void;
   size?: "compact" | "large";
+  autoFocus?: boolean;
+  align?: "left" | "center";
 };
 
-const TimeInput = ({ id, label, value, onChange, size = "compact" }: TimeInputProps) => {
+const TimeInput = ({
+  id,
+  label,
+  value,
+  onChange,
+  size = "compact",
+  autoFocus = false,
+  align = "left",
+}: TimeInputProps) => {
+  const minutesRef = useRef<HTMLInputElement | null>(null);
+  const secondsRef = useRef<HTMLInputElement | null>(null);
   const inputClass =
     size === "large"
-      ? "w-20 text-center text-3xl font-semibold"
+      ? "w-20 text-center text-3xl font-semibold border-transparent shadow-none focus-visible:ring-0 focus-visible:ring-offset-0"
       : "w-16 text-center";
   const containerClass =
     size === "large"
-      ? "rounded-2xl border border-slate-200 bg-white px-4 py-3"
+      ? "rounded-2xl bg-white px-4 py-3"
       : "";
+
+  useEffect(() => {
+    if (!autoFocus) return;
+    const id = window.setTimeout(() => {
+      minutesRef.current?.focus();
+      minutesRef.current?.select();
+    }, 0);
+    return () => window.clearTimeout(id);
+  }, [autoFocus]);
+
+  const alignClass = align === "center" ? "items-center text-center" : "";
+
   return (
-    <div>
+    <div className={`flex flex-col ${alignClass}`}>
       <Label htmlFor={id} className="text-xs uppercase text-slate-500">
         {label}
       </Label>
-      <div className={`mt-1 flex items-center gap-2 ${containerClass}`}>
+      <div
+        className={`mt-1 flex items-center gap-2 ${containerClass} ${align === "center" ? "justify-center" : ""}`}
+      >
         <Input
           id={id}
           inputMode="numeric"
           value={value.minutes}
-          onChange={(event) =>
-            onChange({ minutes: sanitizeTimeInput(event.target.value), seconds: value.seconds })
-          }
-          onBlur={() =>
-            onChange({ minutes: padTime(value.minutes), seconds: padTime(value.seconds) })
+          ref={minutesRef}
+          onFocus={(event) => event.currentTarget.select()}
+          onClick={(event) => event.currentTarget.select()}
+          onChange={(event) => {
+            const nextMinutes = sanitizeTimeInput(event.target.value);
+            onChange({ minutes: nextMinutes, seconds: value.seconds });
+            if (nextMinutes.length === 2) {
+              secondsRef.current?.focus();
+            }
+          }}
+          onBlur={(event) =>
+            onChange({
+              minutes: padTime(sanitizeTimeInput(event.currentTarget.value)),
+              seconds: value.seconds,
+            })
           }
           className={inputClass}
         />
@@ -126,11 +162,17 @@ const TimeInput = ({ id, label, value, onChange, size = "compact" }: TimeInputPr
         <Input
           inputMode="numeric"
           value={value.seconds}
+          ref={secondsRef}
+          onFocus={(event) => event.currentTarget.select()}
+          onClick={(event) => event.currentTarget.select()}
           onChange={(event) =>
             onChange({ minutes: value.minutes, seconds: sanitizeTimeInput(event.target.value) })
           }
-          onBlur={() =>
-            onChange({ minutes: padTime(value.minutes), seconds: padTime(value.seconds) })
+          onBlur={(event) =>
+            onChange({
+              minutes: value.minutes,
+              seconds: padTime(sanitizeTimeInput(event.currentTarget.value)),
+            })
           }
           className={inputClass}
         />
@@ -163,7 +205,7 @@ const ExerciseTimerForm = ({ onClose, embedded = false }: ExerciseTimerFormProps
   const [isEditorOpen, setIsEditorOpen] = useState(false);
   const [editorMode, setEditorMode] = useState<SegmentEditorMode>("add");
   const [editorType, setEditorType] = useState<SegmentType>("exercise");
-  const [editorTime, setEditorTime] = useState<TimeValue>({ minutes: "00", seconds: "30" });
+  const [editorTime, setEditorTime] = useState<TimeValue>({ minutes: "00", seconds: "00" });
   const [editorLaps, setEditorLaps] = useState("1");
   const [editingId, setEditingId] = useState<string | null>(null);
 
@@ -653,13 +695,6 @@ const ExerciseTimerForm = ({ onClose, embedded = false }: ExerciseTimerFormProps
           >
             Add Break
           </Button>
-          <Button
-            type="button"
-            className="pointer-events-auto rounded-full bg-amber-500 text-white shadow"
-            onClick={() => openEditor("add", "setRest")}
-          >
-            Add Group
-          </Button>
         </div>
         <Button
           type="button"
@@ -683,16 +718,18 @@ const ExerciseTimerForm = ({ onClose, embedded = false }: ExerciseTimerFormProps
                 <XIcon className="size-5" />
               </Button>
             </div>
-            <div className="mt-6 space-y-5">
+            <div className="mt-6 space-y-5 text-center">
               <TimeInput
                 label="Durasi"
                 value={editorTime}
                 onChange={setEditorTime}
                 size="large"
+                autoFocus={isEditorOpen}
+                align="center"
               />
               <div>
                 <Label className="text-xs uppercase text-slate-500">Lap</Label>
-                <div className="mt-2 flex items-center gap-4">
+                <div className="mt-2 flex items-center justify-center gap-4">
                   <Button
                     type="button"
                     variant="outline"

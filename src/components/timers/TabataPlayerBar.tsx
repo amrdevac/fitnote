@@ -37,6 +37,7 @@ const TabataPlayerBar = () => {
   const adjustSeconds = useTabataPlayerStore((state) => state.adjustSeconds);
   const tick = useTabataPlayerStore((state) => state.tick);
   const vibrationMs = useTimerSettings((state) => state.vibrationMs);
+  const wakeLockEnabled = useTimerSettings((state) => state.wakeLockEnabled);
   const [isClosing, setIsClosing] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
   const dragStartY = useRef<number | null>(null);
@@ -87,6 +88,7 @@ const TabataPlayerBar = () => {
 
   useEffect(() => {
     if (typeof navigator === "undefined" || !("wakeLock" in navigator)) return;
+    if (!wakeLockEnabled) return;
     if (status !== "running" || !hasUserInteractedRef.current) return;
     let cancelled = false;
 
@@ -123,7 +125,7 @@ const TabataPlayerBar = () => {
         wakeLockRef.current = null;
       }
     };
-  }, [status]);
+  }, [status, wakeLockEnabled]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
