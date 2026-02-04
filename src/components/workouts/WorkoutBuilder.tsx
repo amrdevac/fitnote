@@ -1,23 +1,17 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import {
-  ArrowLeftIcon,
-  MoreVerticalIcon,
-  PlusIcon,
-  SaveIcon,
-  Settings2Icon,
-  Trash2Icon,
-} from "lucide-react";
+import { MoreVerticalIcon, PlusIcon, SaveIcon, Trash2Icon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/ui/use-toast";
 import { Button } from "@/ui/button";
 import { Input } from "@/ui/input";
 import { Label } from "@/ui/label";
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/ui/sheet";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/ui/sheet";
 import useWorkoutSession from "@/hooks/useWorkoutSession";
 import preferencesDb, { defaultPreferences } from "@/lib/indexedDb/preferences";
 import { useTabataPlayerStore } from "@/store/tabataPlayer";
+import PageHeader from "@/components/shared/PageHeader";
 
 const Toggle = ({
   checked,
@@ -348,30 +342,20 @@ const WorkoutBuilder = ({ onClose, embedded = false }: WorkoutBuilderProps) => {
         className={`flex h-full w-full flex-col bg-transparent transition-transform duration-300 ${panelClasses}`}
       >
         <div ref={panelRef} className="overflow-auto">
-          <header className="flex items-center justify-between px-6 pb-6 pt-8">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={closePanel}
-              className="rounded-md bg-white shadow-md text-slate-600"
-            >
-              <ArrowLeftIcon className="size-5" />
-            </Button>
-            <div className="flex items-center gap-3 rounded-full bg-white/80 px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.3em] text-slate-400 shadow-md">
-              Pengelolaan Aktivitas
-            </div>
+          <div className="px-6 pb-6 pt-8">
+            <PageHeader
+              title="Pengelolaan Aktivitas"
+              onBack={closePanel}
+              onSettings={() => setSettingsOpen(true)}
+              backPosition="left"
+            />
             <Sheet open={settingsOpen} onOpenChange={setSettingsOpen}>
-              <SheetTrigger asChild>
-                <Button size="icon" variant="ghost" className="rounded-md bg-white shadow-md text-slate-600">
-                  <Settings2Icon className="size-5" />
-                </Button>
-              </SheetTrigger>
               <SheetContent
                 side="bottom"
                 className="rounded-t-3xl border-none bg-white px-6 pb-8 pt-6 text-slate-900"
               >
                 <SheetHeader className="mb-4 px-0">
-                  <SheetTitle>Pengaturan FitNote</SheetTitle>
+                  <SheetTitle>Pengaturan Aktivitas</SheetTitle>
                 </SheetHeader>
                 <div className="space-y-2">
                   <label className="flex items-center justify-between rounded-xl border border-slate-200 px-4 py-3">
@@ -389,7 +373,7 @@ const WorkoutBuilder = ({ onClose, embedded = false }: WorkoutBuilderProps) => {
                 </div>
               </SheetContent>
             </Sheet>
-          </header>
+          </div>
 
           <div className="flex flex-col   space-y-5 overflow-y-auto px-6 pb-40 pt-2  ">
             <div className="space-y-2 rounded-lg border border-white/40 bg-white/90 p-5 shadow-[0_25px_50px_rgba(15,23,42,0.08)]">
@@ -553,7 +537,7 @@ const WorkoutBuilder = ({ onClose, embedded = false }: WorkoutBuilderProps) => {
                   )}
                 </div>
               </div>
-              <div className="space-y-2 max-h-52 overflow-auto">
+              <div className="space-y-2 max-h-40 overflow-auto">
                 {workoutSession.currentSets.map((set, index) => {
                   const color = stagedSetColors[index % stagedSetColors.length];
                   return (

@@ -6,10 +6,8 @@ import {
   Trash2Icon,
   TimerResetIcon,
   HourglassIcon,
-  ArrowRightIcon,
   PlayIcon,
   PlusIcon,
-  Settings2Icon,
   XIcon,
   MoreVerticalIcon,
   PencilIcon,
@@ -21,6 +19,7 @@ import { Label } from "@/ui/label";
 import useExerciseTimers from "@/hooks/useExerciseTimers";
 import { useTabataPlayerStore } from "@/store/tabataPlayer";
 import { useTimerSettings } from "@/store/timerSettings";
+import PageHeader from "@/components/shared/PageHeader";
 
 const secondsToLabel = (totalSeconds: number) => {
   const minutes = Math.floor(totalSeconds / 60);
@@ -187,22 +186,22 @@ const ExerciseTimerList = ({ onClose, embedded = false }: ExerciseTimerListProps
       >
         <div
           ref={containerRef}
-          className="mx-auto flex h-full w-full max-w-2xl flex-col px-5 pb-32 pt-5 text-slate-900"
+          className="mx-auto flex h-full w-full max-w-2xl flex-col px-6 pb-32 pt-0 text-slate-900"
         >
-          <div className="mb-3 flex items-center justify-between">
-            <div>
-              <p className=" uppercase tracking-wide text-slate-400">Pengelolaan Timer</p>
-            </div>
-            <div className="flex items-center gap-2">
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                onClick={() => setSettingsOpen(true)}
-                aria-label="Pengaturan"
-              >
-                <Settings2Icon className="size-5" />
-              </Button>
+          <PageHeader
+            title="Pengelolaan Timer"
+            onBack={closePanel}
+            onSettings={() => setSettingsOpen(true)}
+            backPosition="right"
+            className="mb-3 pb-6 pt-8"
+          />
+
+          <div className="mt-2 space-y-4 pb-10">
+            <div className="flex items-center justify-between gap-2 text-slate-600">
+              <div className="flex items-center gap-2">
+                <TimerResetIcon className="size-4" />
+                <p className="text-sm font-semibold uppercase tracking-wide text-slate-500">Timer tersimpan</p>
+              </div>
               <Button
                 type="button"
                 variant="ghost"
@@ -212,16 +211,6 @@ const ExerciseTimerList = ({ onClose, embedded = false }: ExerciseTimerListProps
                 <PlusIcon className="mr-1 size-4" />
                 Tambah
               </Button>
-              <Button variant={"ghost"} size="icon" onClick={closePanel} className="text-slate-600">
-                <ArrowRightIcon className="size-5" />
-              </Button>
-            </div>
-          </div>
-
-          <div className="mt-2 space-y-4 pb-10">
-            <div className="flex items-center gap-2 text-slate-600">
-              <TimerResetIcon className="size-4" />
-              <p className="text-sm font-semibold uppercase tracking-wide text-slate-500">Timer tersimpan</p>
             </div>
             {timerStore.timers.length === 0 && timerStore.isLoaded && (
               <div className="rounded-2xl border border-dashed border-slate-300 bg-white/70 px-4 py-8 text-center text-sm text-slate-500">
