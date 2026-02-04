@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/ui/button";
 import { useTabataPlayerStore } from "@/store/tabataPlayer";
+import { useTimerSettings } from "@/store/timerSettings";
 
 const formatSeconds = (totalSeconds: number) => {
   const minutes = Math.floor(totalSeconds / 60);
@@ -35,10 +36,19 @@ const TabataPlayerBar = () => {
   const prev = useTabataPlayerStore((state) => state.prev);
   const adjustSeconds = useTabataPlayerStore((state) => state.adjustSeconds);
   const tick = useTabataPlayerStore((state) => state.tick);
+  const vibrationMs = useTimerSettings((state) => state.vibrationMs);
   const [isClosing, setIsClosing] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
   const dragStartY = useRef<number | null>(null);
   const previousPaddingRef = useRef<string | null>(null);
+  const lastAnnouncedRef = useRef<{ stepId: string | null; second: number | null }>({
+    stepId: null,
+    second: null,
+  });
+  const lastStepLabelRef = useRef<string | null>(null);
+  const lastIndexRef = useRef<number | null>(null);
+  const tingAudioRef = useRef<HTMLAudioElement | null>(null);
+  const hasUserInteractedRef = useRef(false);
 
   const currentStep = useMemo(() => queue[currentIndex], [queue, currentIndex]);
 
@@ -73,6 +83,105 @@ const TabataPlayerBar = () => {
       previousPaddingRef.current = null;
     }
   }, [isClosing, queue.length]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    tingAudioRef.current = new Audio("/ting.mp3");
+    tingAudioRef.current.preload = "auto";
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const handleFirstInteraction = () => {
+      hasUserInteractedRef.current = true;
+      const audio = tingAudioRef.current;
+      if (audio) {
+        const previousVolume = audio.volume;
+        audio.volume = 0;
+        audio
+          .play()
+          .then(() => {
+            audio.pause();
+            audio.currentTime = 0;
+            audio.volume = previousVolume;
+          })
+          .catch(() => {
+            audio.volume = previousVolume;
+          });
+      }
+      window.removeEventListener("pointerdown", handleFirstInteraction);
+    };
+    window.addEventListener("pointerdown", handleFirstInteraction, { once: true });
+    return () => window.removeEventListener("pointerdown", handleFirstInteraction);
+  }, []);
+
+  useEffect(() => {
+    if (!currentStep) return;
+    if (lastIndexRef.current === null) {
+      lastIndexRef.current = currentIndex;
+      return;
+    }
+    if (currentIndex === lastIndexRef.current) return;
+    lastIndexRef.current = currentIndex;
+    if (!hasUserInteractedRef.current) return;
+    const audio = tingAudioRef.current;
+    if (!audio) return;
+    audio.currentTime = 0;
+    audio.play().catch(() => {});
+  }, [currentIndex, currentStep]);
+
+  useEffect(() => {
+    if (status !== "running") return;
+    if (!currentStep) return;
+    if (lastStepLabelRef.current === currentStep.id) return;
+    lastStepLabelRef.current = currentStep.id;
+    if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
+    const utterance = new SpeechSynthesisUtterance();
+    utterance.lang = "id-ID";
+    utterance.rate = 1.1;
+    utterance.text = currentStep.label.toLowerCase();
+    window.speechSynthesis.cancel();
+    window.speechSynthesis.speak(utterance);
+  }, [currentStep, status]);
+
+  useEffect(() => {
+    if (status !== "running") return;
+    if (!currentStep) return;
+    if (remainingSeconds < 1 || remainingSeconds > 5) return;
+    if (lastAnnouncedRef.current.stepId === currentStep.id &&
+      lastAnnouncedRef.current.second === remainingSeconds) {
+      return;
+    }
+    lastAnnouncedRef.current = { stepId: currentStep.id, second: remainingSeconds };
+    if (vibrationMs > 0 && typeof navigator !== "undefined" && "vibrate" in navigator) {
+      navigator.vibrate(vibrationMs);
+    }
+    if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
+    const utterance = new SpeechSynthesisUtterance();
+    utterance.lang = "id-ID";
+    utterance.rate = 1.4;
+    switch (remainingSeconds) {
+      case 5:
+        utterance.text = "lima";
+        break;
+      case 4:
+        utterance.text = "empat";
+        break;
+      case 3:
+        utterance.text = "tiga";
+        break;
+      case 2:
+        utterance.text = "dua";
+        break;
+      case 1:
+        utterance.text = "satu";
+        break;
+      default:
+        utterance.text = remainingSeconds.toString();
+    }
+    window.speechSynthesis.cancel();
+    window.speechSynthesis.speak(utterance);
+  }, [currentStep, remainingSeconds, status, vibrationMs]);
 
   const handleTouchStart = (event: React.TouchEvent<HTMLDivElement>) => {
     dragStartY.current = event.touches[0]?.clientY ?? null;
@@ -145,7 +254,14 @@ const TabataPlayerBar = () => {
               <Button
                 type="button"
                 size="icon"
-                onClick={isRunning ? pause : play}
+                onClick={() => {
+                  hasUserInteractedRef.current = true;
+                  if (isRunning) {
+                    pause();
+                  } else {
+                    play();
+                  }
+                }}
                 aria-label={isRunning ? "Pause" : "Play"}
               >
                 {isRunning ? <PauseIcon className="size-4" /> : <PlayIcon className="size-4" />}

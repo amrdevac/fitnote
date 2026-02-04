@@ -53,6 +53,8 @@ const ExerciseTimerList = ({ onClose, embedded = false }: ExerciseTimerListProps
   const playTimer = useTabataPlayerStore((state) => state.play);
   const leadInSeconds = useTimerSettings((state) => state.leadInSeconds);
   const setLeadInSeconds = useTimerSettings((state) => state.setLeadInSeconds);
+  const vibrationMs = useTimerSettings((state) => state.vibrationMs);
+  const setVibrationMs = useTimerSettings((state) => state.setVibrationMs);
   const containerRef = useRef<HTMLDivElement>(null);
   const swipeStartX = useRef<number | null>(null);
   const swipeAnimationRef = useRef<number | null>(null);
@@ -62,6 +64,7 @@ const ExerciseTimerList = ({ onClose, embedded = false }: ExerciseTimerListProps
   const [menuOpenId, setMenuOpenId] = useState<string | null>(null);
   const [leadInMinutes, setLeadInMinutes] = useState("00");
   const [leadInSecs, setLeadInSecs] = useState("03");
+  const [vibrationInput, setVibrationInput] = useState("200");
 
   useEffect(() => {
     const handleClose = () => setMenuOpenId(null);
@@ -172,6 +175,10 @@ const ExerciseTimerList = ({ onClose, embedded = false }: ExerciseTimerListProps
     setLeadInMinutes(padTime(minutes.toString()));
     setLeadInSecs(padTime(seconds.toString()));
   }, [leadInSeconds]);
+
+  useEffect(() => {
+    setVibrationInput(Math.max(0, Math.round(vibrationMs)).toString());
+  }, [vibrationMs]);
 
   return (
     <div
@@ -327,6 +334,25 @@ const ExerciseTimerList = ({ onClose, embedded = false }: ExerciseTimerListProps
                 />
               </div>
             </div>
+            <div className="mt-5">
+              <Label className="text-xs uppercase text-slate-500">Durasi getar (ms)</Label>
+              <div className="mt-2 flex items-center gap-2">
+                <Input
+                  inputMode="numeric"
+                  value={vibrationInput}
+                  onChange={(event) =>
+                    setVibrationInput(event.target.value.replace(/\D/g, "").slice(0, 4))
+                  }
+                  onBlur={() =>
+                    setVibrationInput(
+                      Math.max(0, Number.parseInt(vibrationInput || "0", 10)).toString()
+                    )
+                  }
+                  className="w-24 text-center text-lg font-semibold"
+                />
+                <span className="text-xs text-slate-400">0 untuk nonaktif</span>
+              </div>
+            </div>
             <div className="mt-6 flex gap-2">
               <Button variant="outline" className="flex-1" onClick={() => setSettingsOpen(false)}>
                 Batal
@@ -337,6 +363,10 @@ const ExerciseTimerList = ({ onClose, embedded = false }: ExerciseTimerListProps
                   const seconds = parseTime(leadInMinutes, leadInSecs);
                   if (!Number.isNaN(seconds)) {
                     setLeadInSeconds(seconds);
+                  }
+                  const vibrationValue = Number.parseInt(vibrationInput || "0", 10);
+                  if (!Number.isNaN(vibrationValue)) {
+                    setVibrationMs(vibrationValue);
                   }
                   setSettingsOpen(false);
                 }}

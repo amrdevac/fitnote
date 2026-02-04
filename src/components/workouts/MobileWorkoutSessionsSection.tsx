@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type {
   ChangeEvent as ReactChangeEvent,
   KeyboardEvent as ReactKeyboardEvent,
@@ -14,6 +14,7 @@ import {
   ChevronDown,
   Download,
   LayersIcon,
+  MoreVerticalIcon,
   Repeat2Icon,
   ScaleIcon,
   TimerIcon,
@@ -51,6 +52,8 @@ const MobileWorkoutSessionsSection = ({
   onOpenMovementSheet,
 }: MobileWorkoutSessionsSectionProps) => {
   const titleInputRef = useRef<HTMLInputElement | null>(null);
+  const menuRef = useRef<HTMLDivElement | null>(null);
+  const [menuOpen, setMenuOpen] = useState(false);
   const visibleSessions = useMobileWorkoutHomeStore((state) => state.visibleSessions);
   const totalMovements = useMobileWorkoutHomeStore((state) => state.totalMovements);
   const expandedSessions = useMobileWorkoutHomeStore((state) => state.expandedSessions);
@@ -85,6 +88,16 @@ const MobileWorkoutSessionsSection = ({
       titleInputRef.current.select();
     }
   }, [editingSessionId]);
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    const handleClick = (event: MouseEvent) => {
+      if (!menuRef.current || menuRef.current.contains(event.target as Node)) return;
+      setMenuOpen(false);
+    };
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [menuOpen]);
 
   const handleTitleBlur = async () => {
     const success = await commitEditingTitle();
@@ -121,34 +134,54 @@ const MobileWorkoutSessionsSection = ({
               {visibleSessions.length} sesi · {totalMovements} gerakan
             </p>
           </div>
-          <div className="flex flex-col items-end gap-2">
+          <div className="relative" ref={menuRef}>
             <button
               type="button"
-              onClick={onOpenArchive}
+              onClick={() => setMenuOpen((prev) => !prev)}
               className="inline-flex size-12 items-center justify-center rounded-2xl bg-white text-slate-600 shadow-lg shadow-emerald-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-200"
+              aria-label="Menu"
             >
-              <CalendarDays className="size-5" />
+              <MoreVerticalIcon className="size-5" />
             </button>
-            <div className="flex gap-2">
-              <button
-                type="button"
-                onClick={onExportBackup}
-                className="inline-flex size-10 items-center justify-center rounded-2xl bg-white text-slate-600 shadow-md shadow-slate-200/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-200 disabled:opacity-60"
-                disabled={isExporting}
-                aria-label="Export backup"
-              >
-                <Download className="size-4" />
-              </button>
-              <button
-                type="button"
-                onClick={onImportClick}
-                className="inline-flex size-10 items-center justify-center rounded-2xl bg-white text-slate-600 shadow-md shadow-slate-200/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-200 disabled:opacity-60"
-                disabled={isImporting}
-                aria-label="Import backup"
-              >
-                <Upload className="size-4" />
-              </button>
-            </div>
+            {menuOpen && (
+              <div className="absolute right-0 top-14 z-20 w-52 rounded-2xl border border-slate-100 bg-white p-2 text-sm shadow-xl">
+                <button
+                  type="button"
+                  className="flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left text-slate-700 hover:bg-slate-50"
+                  onClick={() => {
+                    setMenuOpen(false);
+                    onOpenArchive();
+                  }}
+                >
+                  <CalendarDays className="size-4" />
+                  Arsip
+                </button>
+                <button
+                  type="button"
+                  className="flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left text-slate-700 hover:bg-slate-50 disabled:opacity-60"
+                  onClick={() => {
+                    setMenuOpen(false);
+                    onExportBackup();
+                  }}
+                  disabled={isExporting}
+                >
+                  <Download className="size-4" />
+                  Export backup
+                </button>
+                <button
+                  type="button"
+                  className="flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left text-slate-700 hover:bg-slate-50 disabled:opacity-60"
+                  onClick={() => {
+                    setMenuOpen(false);
+                    onImportClick();
+                  }}
+                  disabled={isImporting}
+                >
+                  <Upload className="size-4" />
+                  Import backup
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </header>
