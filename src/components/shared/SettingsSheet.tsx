@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import type { ReactNode } from "react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/ui/sheet";
 
@@ -20,6 +21,17 @@ const SettingsSheet = ({
   contentClassName,
   preventAutoFocus = false,
 }: SettingsSheetProps) => {
+  useEffect(() => {
+    if (!open || !preventAutoFocus) return;
+    const id = window.setTimeout(() => {
+      const active = document.activeElement;
+      if (active instanceof HTMLElement) {
+        active.blur();
+      }
+    }, 0);
+    return () => window.clearTimeout(id);
+  }, [open, preventAutoFocus]);
+
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
