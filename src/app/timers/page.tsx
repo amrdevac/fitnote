@@ -1,14 +1,16 @@
 'use client';
 
 import SwipeNavigation from "@/components/SwipeNavigation";
-import ExerciseTimerManager from "@/components/timers/ExerciseTimerManager";
+import ExerciseTimerList from "@/components/timers/ExerciseTimerList";
+import TabataPlayerBar from "@/components/timers/TabataPlayerBar";
 
 const TimerPage = () => {
   return (
     <SwipeNavigation rightRoute="/" className="min-h-dvh bg-slate-50">
       <main>
-        <ExerciseTimerManager />
+        <ExerciseTimerList />
       </main>
+      <TabataPlayerBar />
     </SwipeNavigation>
   );
 };

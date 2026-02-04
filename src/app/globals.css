@@ -150,7 +150,16 @@
   body {
     @apply bg-background text-foreground;
     touch-action: manipulation;
+    padding-bottom: var(--player-offset, 0px);
   }
+}
+
+.player-safe-bottom {
+  bottom: var(--player-offset, 0px);
+}
+
+.player-safe-padding {
+  padding-bottom: var(--player-offset, 0px);
 }
 
 @keyframes toast-slide-in {

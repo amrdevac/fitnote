@@ -1,7 +1,14 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ArrowLeftIcon, MoreVerticalIcon, PlusIcon, Settings2Icon, Trash2Icon } from "lucide-react";
+import {
+  ArrowLeftIcon,
+  MoreVerticalIcon,
+  PlusIcon,
+  SaveIcon,
+  Settings2Icon,
+  Trash2Icon,
+} from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/ui/use-toast";
 import { Button } from "@/ui/button";
@@ -10,6 +17,7 @@ import { Label } from "@/ui/label";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/ui/sheet";
 import useWorkoutSession from "@/hooks/useWorkoutSession";
 import preferencesDb, { defaultPreferences } from "@/lib/indexedDb/preferences";
+import { useTabataPlayerStore } from "@/store/tabataPlayer";
 
 const Toggle = ({
   checked,
@@ -45,6 +53,8 @@ type WorkoutBuilderProps = {
 const WorkoutBuilder = ({ onClose, embedded = false }: WorkoutBuilderProps) => {
   const router = useRouter();
   const workoutSession = useWorkoutSession();
+  const playerStatus = useTabataPlayerStore((state) => state.status);
+  const isPlayerRunning = playerStatus === "running";
   const [panelState, setPanelState] = useState<"enter" | "active" | "exit">("enter");
   useEffect(() => {
     const id = requestAnimationFrame(() => setPanelState("active"));
@@ -337,7 +347,7 @@ const WorkoutBuilder = ({ onClose, embedded = false }: WorkoutBuilderProps) => {
       <div
         className={`flex h-full w-full flex-col bg-transparent transition-transform duration-300 ${panelClasses}`}
       >
-        <div ref={panelRef} className="flex h-full w-full flex-col">
+        <div ref={panelRef} className="overflow-auto">
           <header className="flex items-center justify-between px-6 pb-6 pt-8">
             <Button
               variant="ghost"
@@ -381,9 +391,9 @@ const WorkoutBuilder = ({ onClose, embedded = false }: WorkoutBuilderProps) => {
             </Sheet>
           </header>
 
-          <div className="flex-1 space-y-5 overflow-y-auto px-6 pb-40 pt-2">
+          <div className="flex flex-col   space-y-5 overflow-y-auto px-6 pb-40 pt-2  ">
             <div className="space-y-2 rounded-lg border border-white/40 bg-white/90 p-5 shadow-[0_25px_50px_rgba(15,23,42,0.08)]">
-              <div className="space-y-2">
+              <div className="max-h-64 space-y-2 overflow-y-auto pr-1">
                 <div className="flex items-center gap-3">
                   <Input
                     ref={movementInputRef}
@@ -543,7 +553,7 @@ const WorkoutBuilder = ({ onClose, embedded = false }: WorkoutBuilderProps) => {
                   )}
                 </div>
               </div>
-              <div className="space-y-2">
+              <div className="space-y-2 max-h-52 overflow-auto">
                 {workoutSession.currentSets.map((set, index) => {
                   const color = stagedSetColors[index % stagedSetColors.length];
                   return (
@@ -658,15 +668,29 @@ const WorkoutBuilder = ({ onClose, embedded = false }: WorkoutBuilderProps) => {
                 </div>
               </div>
             )}
+
           </div>
-          <div className="fixed inset-x-0 bottom-0 z-40 bg-gradient-to-b from-transparent to-white px-6 pb-8 pt-6">
-            <Button
-              className="group flex h-14 w-full items-center justify-center gap-3 rounded-full bg-indigo-600 text-base font-semibold text-white shadow-[0_30px_60px_rgba(79,70,229,0.35)]"
-              onClick={handleSaveSession}
-            >
-              Simpan Sesi
-            </Button>
+          <div className="mt-auto px-6 pb-8">
+            {isPlayerRunning ? (
+              <div className="flex justify-end">
+                <Button
+                  className="size-14 rounded-full bg-indigo-600 text-white shadow-[0_30px_60px_rgba(79,70,229,0.35)]"
+                  onClick={handleSaveSession}
+                >
+                  <SaveIcon className="size-6" />
+                  <span className="sr-only">Simpan Sesi</span>
+                </Button>
+              </div>
+            ) : (
+              <Button
+                className="group flex h-14 w-full items-center justify-center gap-3 rounded-full bg-indigo-600 text-base font-semibold text-white shadow-[0_30px_60px_rgba(79,70,229,0.35)]"
+                onClick={handleSaveSession}
+              >
+                Simpan Sesi
+              </Button>
+            )}
           </div>
+
         </div>
       </div>
     </div>

@@ -9,6 +9,7 @@ const uniqueId = () => `${Date.now()}-${Math.random().toString(16).slice(2)}`;
 type NewSegmentInput = {
   exerciseSeconds: number;
   restSeconds: number;
+  setRestSeconds: number;
   laps: number;
 };
 
@@ -22,7 +23,16 @@ const useExerciseTimers = () => {
       try {
         const storedTimers = await timersDb.getTimers();
         if (cancelled) return;
-        setTimers(storedTimers.sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1)));
+        const normalized = storedTimers.map((timer) => ({
+          ...timer,
+          leadInSeconds: timer.leadInSeconds ?? 0,
+          workoutLaps: timer.workoutLaps ?? 1,
+          segments: timer.segments.map((segment) => ({
+            ...segment,
+            setRestSeconds: segment.setRestSeconds ?? 0,
+          })),
+        }));
+        setTimers(normalized.sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1)));
       } catch (error) {
         console.error("Failed to load exercise timers", error);
       } finally {
@@ -37,11 +47,18 @@ const useExerciseTimers = () => {
     };
   }, []);
 
-  async function createTimer(name: string, segments: NewSegmentInput[]) {
+  async function createTimer(
+    name: string,
+    segments: NewSegmentInput[],
+    leadInSeconds = 0,
+    workoutLaps = 1
+  ) {
     const newTimer: ExerciseTimer = {
       id: uniqueId(),
       name,
       createdAt: new Date().toISOString(),
+      leadInSeconds,
+      workoutLaps,
       segments: segments.map((segment) => ({
         ...segment,
         id: uniqueId(),
@@ -69,10 +86,25 @@ const useExerciseTimers = () => {
     }
   }
 
+  async function updateTimer(updatedTimer: ExerciseTimer) {
+    const prev = timers;
+    setTimers((current) =>
+      current.map((timer) => (timer.id === updatedTimer.id ? updatedTimer : timer))
+    );
+    try {
+      await timersDb.saveTimer(updatedTimer);
+    } catch (error) {
+      console.error("Failed to update exercise timer", error);
+      setTimers(prev);
+      throw error;
+    }
+  }
+
   return {
     timers,
     isLoaded,
     createTimer,
+    updateTimer,
     deleteTimer,
   };
 };
