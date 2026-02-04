@@ -478,7 +478,13 @@ const ExerciseTimerForm = ({ onClose, embedded = false }: ExerciseTimerFormProps
         <div className="mx-auto flex h-full w-full max-w-2xl flex-col px-5 pb-40 pt-5 text-slate-900">
           <form onSubmit={handleSaveTimer} className="space-y-6">
             <div className="flex items-center justify-between">
-              <Button variant="ghost" size="icon" onClick={closePanel} className="text-slate-600">
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                onClick={closePanel}
+                className="text-slate-600"
+              >
                 <ArrowLeftIcon className="size-5" />
               </Button>
               <Button type="submit" variant="ghost" className="text-slate-700" disabled={isSaving}>

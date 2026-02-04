@@ -325,6 +325,7 @@ const ExerciseTimerList = ({ onClose, embedded = false }: ExerciseTimerListProps
         title="Pengaturan Timer"
         open={settingsOpen}
         onOpenChange={setSettingsOpen}
+        preventAutoFocus
       >
         <div className="mt-2">
           <Label className="text-xs uppercase text-slate-500">Aba-aba global (mm:ss)</Label>
