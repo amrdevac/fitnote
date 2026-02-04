@@ -46,6 +46,7 @@ const TabataPlayerBar = () => {
     second: null,
   });
   const lastStepLabelRef = useRef<string | null>(null);
+  const wakeLockRef = useRef<WakeLockSentinel | null>(null);
   const lastIndexRef = useRef<number | null>(null);
   const tingAudioRef = useRef<HTMLAudioElement | null>(null);
   const hasUserInteractedRef = useRef(false);
@@ -83,6 +84,46 @@ const TabataPlayerBar = () => {
       previousPaddingRef.current = null;
     }
   }, [isClosing, queue.length]);
+
+  useEffect(() => {
+    if (typeof navigator === "undefined" || !("wakeLock" in navigator)) return;
+    if (status !== "running" || !hasUserInteractedRef.current) return;
+    let cancelled = false;
+
+    const requestWakeLock = async () => {
+      try {
+        const sentinel = await navigator.wakeLock.request("screen");
+        if (cancelled) {
+          await sentinel.release();
+          return;
+        }
+        wakeLockRef.current = sentinel;
+        sentinel.addEventListener("release", () => {
+          wakeLockRef.current = null;
+        });
+      } catch {
+        // ignore wake lock errors
+      }
+    };
+
+    requestWakeLock();
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible" && status === "running") {
+        requestWakeLock();
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      cancelled = true;
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      if (wakeLockRef.current) {
+        wakeLockRef.current.release().catch(() => {});
+        wakeLockRef.current = null;
+      }
+    };
+  }, [status]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
