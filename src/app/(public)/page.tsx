@@ -6,7 +6,6 @@ import SwipeNavigation from "@/components/SwipeNavigation";
 import MobileWorkoutHome from "@/components/workouts/MobileWorkoutHome";
 import WorkoutBuilder from "@/components/workouts/WorkoutBuilder";
 import ExerciseTimerList from "@/components/timers/ExerciseTimerList";
-import TabataPlayerBar from "@/components/timers/TabataPlayerBar";
 
 export default function Home() {
   const router = useRouter();
@@ -90,7 +89,6 @@ export default function Home() {
       {isBuilderOpen && (
         <WorkoutBuilder embedded onClose={closeBuilder} />
       )}
-      <TabataPlayerBar />
     </SwipeNavigation>
   );
 }

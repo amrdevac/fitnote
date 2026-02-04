@@ -10,6 +10,7 @@ import { Toaster } from "@/ui/toaster";
 import QueryProvider from "@/components/providers/QueryProvider";
 import ServiceWorkerProvider from "@/components/providers/ServiceWorkerProvider";
 import { siteOrigin } from "@/lib/config/site";
+import TabataPlayerBar from "@/components/timers/TabataPlayerBar";
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteOrigin),
@@ -73,6 +74,7 @@ export default function RootLayout({
           <QueryProvider>
             <ProgressBarProviders>
               {children}
+              <TabataPlayerBar />
               <ServiceWorkerProvider />
               <Toaster />
             </ProgressBarProviders>

@@ -2,7 +2,6 @@
 
 import SwipeNavigation from "@/components/SwipeNavigation";
 import ExerciseTimerList from "@/components/timers/ExerciseTimerList";
-import TabataPlayerBar from "@/components/timers/TabataPlayerBar";
 
 const TimerPage = () => {
   return (
@@ -10,7 +9,6 @@ const TimerPage = () => {
       <main>
         <ExerciseTimerList />
       </main>
-      <TabataPlayerBar />
     </SwipeNavigation>
   );
 };
