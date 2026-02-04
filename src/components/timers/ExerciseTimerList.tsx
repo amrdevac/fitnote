@@ -245,12 +245,14 @@ const ExerciseTimerList = ({ onClose, embedded = false }: ExerciseTimerListProps
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="text-slate-500 hover:text-emerald-600"
+                          className={`text-slate-500 hover:text-emerald-600 ${
+                            playerStatus === "running" ? "cursor-not-allowed opacity-50 hover:text-slate-500" : ""
+                          }`}
                           onClick={() => {
-                            if (playerStatus === "running" && currentTimerId !== timer.id) {
+                            if (playerStatus === "running") {
                               toast({
-                                title: "Timer lain sedang berjalan",
-                                description: "Hentikan timer aktif terlebih dahulu.",
+                                title: "Timer sedang berjalan",
+                                description: "Pause atau stop dulu sebelum memulai ulang.",
                               });
                               return;
                             }
@@ -258,6 +260,7 @@ const ExerciseTimerList = ({ onClose, embedded = false }: ExerciseTimerListProps
                             playTimer();
                           }}
                           aria-label="Jalankan timer"
+                          disabled={playerStatus === "running"}
                         >
                           <PlayIcon className="size-5" />
                         </Button>
