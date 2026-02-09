@@ -1,4 +1,5 @@
 import React from "react";
+import { createPortal } from "react-dom";
 import Modal from "./Modal";
 import { Button } from "@/components/ui/button";
 import { Loader2, X } from "lucide-react";
@@ -76,28 +77,54 @@ const ConfirmModal: React.FC<ConfirmModalProps> = ({
 
   if (variant === "overlay") {
     if (!isOpen) return null;
-    return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center px-4 py-6">
+    if (typeof document === "undefined") return null;
+    return createPortal(
+      <div className="fixed inset-0 z-[9999] flex items-center justify-center px-4 py-6">
         <div
-          className="absolute inset-0 bg-slate-900/80 backdrop-blur"
+          className="absolute inset-0 bg-slate-900/70 backdrop-blur"
           onClick={handleClose}
           aria-hidden="true"
         />
-        <div className="relative z-10 w-full max-w-md rounded-[32px] border border-white/20 bg-white p-6 text-slate-900 shadow-2xl">
-          <div className="flex items-center justify-between border-b border-slate-200 pb-4">
-            <h3 className="text-lg font-semibold text-slate-900">{title}</h3>
+        <div className="relative z-10 w-full max-w-sm rounded-[28px] border border-violet-100 bg-violet-50/90 px-6 py-5 text-slate-900 shadow-2xl">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <h3 className="text-base font-semibold text-violet-950">{title}</h3>
+              <p className="mt-2 text-sm leading-relaxed text-slate-600">{message}</p>
+            </div>
             <button
               onClick={handleClose}
               aria-label="Tutup konfirmasi"
-              className="rounded-full p-1 text-slate-500 hover:bg-slate-100"
+              className="rounded-full p-1 text-violet-400 hover:bg-violet-100"
               type="button"
             >
-              <X className="h-4 w-4" />
+              {/* <X className="h-4 w-4" /> */}
             </button>
           </div>
-          <div className="pt-4">{body}</div>
+          <div className="mt-5 flex justify-end gap-5">
+            <Button
+              variant="ghost"
+              onClick={onCancel}
+              type="button"
+              disabled={loading}
+              className="h-auto px-0 text-sm font-semibold uppercase tracking-wide text-violet-500 hover:bg-transparent hover:text-violet-700"
+            >
+              {cancelText}
+            </Button>
+            <Button
+              variant="ghost"
+              onClick={handleConfirm}
+              type="button"
+              disabled={loading}
+              autoFocus={autoFocusConfirm}
+              className="h-auto px-0 text-sm font-semibold uppercase tracking-wide text-violet-600 hover:bg-transparent hover:text-violet-800"
+            >
+              {loading && <Loader2 className="animate-spin" />}
+              {confirmText}
+            </Button>
+          </div>
         </div>
-      </div>
+      </div>,
+      document.body
     );
   }
 

@@ -108,6 +108,7 @@ const ExerciseTimerList = ({ onClose, embedded = false }: ExerciseTimerListProps
   };
 
   function handleTouchStart(event: React.TouchEvent<HTMLDivElement>) {
+    if (!embedded) return;
     swipeStartX.current = event.touches[0]?.clientX ?? null;
   }
 
@@ -120,6 +121,7 @@ const ExerciseTimerList = ({ onClose, embedded = false }: ExerciseTimerListProps
   }
 
   function handleTouchEnd(event: React.TouchEvent<HTMLDivElement>) {
+    if (!embedded) return;
     if (swipeStartX.current === null) return;
     const delta = swipeStartX.current - (event.changedTouches[0]?.clientX ?? 0);
     if (delta > 60) {
@@ -190,9 +192,9 @@ const ExerciseTimerList = ({ onClose, embedded = false }: ExerciseTimerListProps
     <div
       data-swipe-ignore={embedded ? true : undefined}
       className="fixed inset-0 z-50 flex bg-gradient-to-b from-emerald-50 via-white to-white"
-      onTouchStart={handleTouchStart}
-      onTouchMove={handleTouchMove}
-      onTouchEnd={handleTouchEnd}
+      onTouchStart={embedded ? handleTouchStart : undefined}
+      onTouchMove={embedded ? handleTouchMove : undefined}
+      onTouchEnd={embedded ? handleTouchEnd : undefined}
     >
       <div
         className={`flex h-full w-full flex-col overflow-y-auto transition-transform duration-300 ${panelClass}`}
@@ -278,7 +280,7 @@ const ExerciseTimerList = ({ onClose, embedded = false }: ExerciseTimerListProps
                         </Button>
                         {menuOpenId === timer.id && (
                           <div
-                            className="absolute right-0 top-10 z-10 w-40 rounded-xl border border-slate-200 bg-white p-1 shadow-lg"
+                            className="absolute right-0 top-10 z-[150] w-40 rounded-xl border border-slate-200 bg-white p-1 shadow-lg"
                             onClick={(event) => event.stopPropagation()}
                           >
                             <button

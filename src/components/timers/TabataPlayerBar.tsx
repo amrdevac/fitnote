@@ -53,6 +53,50 @@ const TabataPlayerBar = () => {
   const hasUserInteractedRef = useRef(false);
 
   const currentStep = useMemo(() => queue[currentIndex], [queue, currentIndex]);
+  const stepCounts = useMemo(() => {
+    const totals = queue.reduce(
+      (acc, step) => {
+        if (step.type === "work") acc.work += 1;
+        if (step.type === "rest" || step.type === "setRest") acc.rest += 1;
+        return acc;
+      },
+      { work: 0, rest: 0 }
+    );
+
+    if (!queue.length) {
+      return {
+        totalWork: totals.work,
+        totalRest: totals.rest,
+        currentWork: 0,
+        currentRest: 0,
+      };
+    }
+
+    if (status === "finished") {
+      return {
+        totalWork: totals.work,
+        totalRest: totals.rest,
+        currentWork: totals.work,
+        currentRest: totals.rest,
+      };
+    }
+
+    const current = queue.slice(0, currentIndex + 1).reduce(
+      (acc, step) => {
+        if (step.type === "work") acc.work += 1;
+        if (step.type === "rest" || step.type === "setRest") acc.rest += 1;
+        return acc;
+      },
+      { work: 0, rest: 0 }
+    );
+
+    return {
+      totalWork: totals.work,
+      totalRest: totals.rest,
+      currentWork: current.work,
+      currentRest: current.rest,
+    };
+  }, [queue, currentIndex, status]);
 
   useEffect(() => {
     if (status !== "running") return;
@@ -75,8 +119,8 @@ const TabataPlayerBar = () => {
       if (previousPaddingRef.current === null) {
         previousPaddingRef.current = document.body.style.paddingBottom;
       }
-      root.style.setProperty("--player-offset", "150px");
-      document.body.style.paddingBottom = "120px";
+      root.style.setProperty("--player-offset", "calc(150px + var(--bottom-nav-height, 0px))");
+      document.body.style.paddingBottom = "calc(120px + var(--bottom-nav-height, 0px))";
       return;
     }
     root.style.removeProperty("--player-offset");
@@ -121,7 +165,7 @@ const TabataPlayerBar = () => {
       cancelled = true;
       document.removeEventListener("visibilitychange", handleVisibilityChange);
       if (wakeLockRef.current) {
-        wakeLockRef.current.release().catch(() => {});
+        wakeLockRef.current.release().catch(() => { });
         wakeLockRef.current = null;
       }
     };
@@ -170,7 +214,7 @@ const TabataPlayerBar = () => {
     const audio = tingAudioRef.current;
     if (!audio) return;
     audio.currentTime = 0;
-    audio.play().catch(() => {});
+    audio.play().catch(() => { });
   }, [currentIndex, currentStep]);
 
   useEffect(() => {
@@ -247,6 +291,18 @@ const TabataPlayerBar = () => {
     dragStartY.current = null;
   };
 
+  const handleQueueTouchStart = (event: React.TouchEvent<HTMLDivElement>) => {
+    event.stopPropagation();
+  };
+
+  const handleQueueTouchMove = (event: React.TouchEvent<HTMLDivElement>) => {
+    event.stopPropagation();
+  };
+
+  const handleQueueTouchEnd = (event: React.TouchEvent<HTMLDivElement>) => {
+    event.stopPropagation();
+  };
+
   if (!queue.length && !isClosing) return null;
 
   const isRunning = status === "running";
@@ -261,33 +317,31 @@ const TabataPlayerBar = () => {
         />
       )}
       <div
-        className={`fixed inset-x-0 bottom-0 z-50 bg-white/95 shadow-[0_-12px_30px_rgba(15,23,42,0.12)] backdrop-blur transition-transform duration-300 ${isClosing ? "translate-y-full" : "translate-y-0"}`}
+        style={{ bottom: "var(--bottom-nav-height, 0px)" }}
+        className={`fixed inset-x-0 z-50 bg-white/95 shadow-[0_-12px_30px_rgba(15,23,42,0.12)] backdrop-blur transition-transform duration-300 ${isClosing ? "translate-y-full" : "translate-y-0"}`}
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
       >
-        <div className="mx-auto flex w-full max-w-2xl flex-col gap-3 px-4 py-4">
+        <div className="mx-auto flex w-full max-w-2xl flex-col gap-2 px-4 py-2.5">
           <button
             type="button"
-            className="mx-auto h-1.5 w-14 rounded-full bg-slate-200"
+            className="mx-auto h-1.5 w-12 rounded-full bg-slate-200"
             onClick={() => setIsExpanded((prev) => !prev)}
             aria-label="Toggle detail"
           />
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <p className="text-xs uppercase tracking-wide text-slate-400">Sedang berjalan</p>
-              <p className="text-base font-semibold text-slate-900">
+          <div className="flex items-center justify-between gap-2">
+            <div className="min-w-0 flex-1 ">
+              <p className="text-sm font-semibold text-slate-900">
                 {currentTimerName ?? "Timer"}
               </p>
-              <p className="text-sm text-slate-500">
-                {currentStep ? `${currentStep.label} • Step ${currentIndex + 1}/${queue.length}` : "-"}
+              <p className="truncate text-xs text-slate-500">
+                {currentStep ? `${currentStep.label} • ${currentIndex + 1}/${queue.length}` : "-"}
               </p>
             </div>
-            <div className="text-right">
-              <p className="text-3xl font-semibold text-slate-900">
-                {isFinished ? "Selesai" : formatSeconds(remainingSeconds)}
-              </p>
-            </div>
+            <p className="whitespace-nowrap text-2xl font-semibold text-slate-900">
+              {isFinished ? "Selesai" : formatSeconds(remainingSeconds)}
+            </p>
           </div>
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div className="flex items-center gap-2">
@@ -356,15 +410,36 @@ const TabataPlayerBar = () => {
             className={`mx-auto w-full max-w-2xl overflow-hidden transition-all duration-300 ${isExpanded ? "max-h-[60vh] pb-6" : "max-h-0"
               }`}
           >
-            <div className="px-4 pb-4">
-              <p className="text-xs uppercase tracking-wide text-slate-400">Queue</p>
-              <div className="mt-3 space-y-2">
+            <div
+              className="max-h-[60vh] overflow-y-auto px-4 pb-4"
+              onTouchStart={handleQueueTouchStart}
+              onTouchMove={handleQueueTouchMove}
+              onTouchEnd={handleQueueTouchEnd}
+            >
+              <div className="sticky top-0 z-10 bg-white/95 pb-3 pt-2 backdrop-blur">
+                <p className="text-xs uppercase tracking-wide text-slate-400">Queue</p>
+                <div className="mt-2 grid grid-cols-2 gap-2 text-xs text-slate-600">
+                  <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
+                    <p className="text-[10px] uppercase tracking-wide text-slate-400">Gerak</p>
+                    <p className="text-sm font-semibold text-slate-900">
+                      {stepCounts.currentWork}/{stepCounts.totalWork}
+                    </p>
+                  </div>
+                  <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
+                    <p className="text-[10px] uppercase tracking-wide text-slate-400">Rest</p>
+                    <p className="text-sm font-semibold text-slate-900">
+                      {stepCounts.currentRest}/{stepCounts.totalRest}
+                    </p>
+                  </div>
+                </div>
+              </div>
+              <div className="space-y-2">
                 {queue.map((step, index) => (
                   <div
                     key={step.id}
                     className={`flex items-center justify-between rounded-xl border px-3 py-2 text-sm ${index === currentIndex
-                        ? "border-emerald-400 bg-emerald-50 text-emerald-700"
-                        : "border-slate-200 bg-white text-slate-600"
+                      ? "border-emerald-400 bg-emerald-50 text-emerald-700"
+                      : "border-slate-200 bg-white text-slate-600"
                       }`}
                   >
                     <span>

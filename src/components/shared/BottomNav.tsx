@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useRef } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { HomeIcon, PlusIcon, TimerIcon } from "lucide-react";
@@ -28,10 +29,27 @@ const navItems = [
 
 export default function BottomNav() {
   const pathname = usePathname();
+  const navRef = useRef<HTMLElement | null>(null);
+
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    const root = document.documentElement;
+    const updateNavHeight = () => {
+      const height = navRef.current?.offsetHeight ?? 0;
+      root.style.setProperty("--bottom-nav-height", `${height}px`);
+    };
+    updateNavHeight();
+    window.addEventListener("resize", updateNavHeight);
+    return () => {
+      window.removeEventListener("resize", updateNavHeight);
+      root.style.removeProperty("--bottom-nav-height");
+    };
+  }, []);
 
   return (
     <nav
       aria-label="Bottom navigation"
+      ref={navRef}
       className="fixed inset-x-0 bottom-0 z-[100] border-t border-slate-200 bg-white/95 backdrop-blur"
     >
       <div className="mx-auto flex max-w-md items-center justify-around px-4 pb-[calc(0.35rem+env(safe-area-inset-bottom))] pt-1.5">

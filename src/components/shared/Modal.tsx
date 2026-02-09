@@ -1,5 +1,6 @@
 import { XCircle } from "lucide-react";
 import React, { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 
 interface ModalProps {
   isOpen: boolean;
@@ -45,9 +46,9 @@ const Modal: React.FC<ModalProps> = ({
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [isOpen, closeOnEsc, onClose]);
 
-  if (!show) return null;
+  if (!show || typeof document === "undefined") return null;
 
-  return (
+  return createPortal(
     <div
       className={`fixed inset-0 ${fullscreen ? "bg-slate-900/80 backdrop-blur-sm" : "bg-black/30"} ${zIndex} flex justify-center items-center p-4 transition-opacity duration-200 ${
         isOpen ? "opacity-100" : "opacity-0"
@@ -76,7 +77,8 @@ const Modal: React.FC<ModalProps> = ({
         </div>
         <div className="p-6 overflow-y-auto">{children}</div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
 

@@ -12,6 +12,7 @@ import preferencesDb, { defaultPreferences } from "@/lib/indexedDb/preferences";
 import { useTabataPlayerStore } from "@/store/tabataPlayer";
 import PageHeader from "@/components/shared/PageHeader";
 import SettingsSheet from "@/components/shared/SettingsSheet";
+import ConfirmModal from "@/components/shared/ConfirmModal";
 
 const Toggle = ({
   checked,
@@ -95,6 +96,7 @@ const WorkoutBuilder = ({ onClose, embedded = false }: WorkoutBuilderProps) => {
     });
   };
   function handleTouchStart(event: React.TouchEvent<HTMLDivElement>) {
+    if (!embedded) return;
     swipeStartX.current = event.touches[0]?.clientX ?? null;
   }
   function handleTouchMove(event: React.TouchEvent<HTMLDivElement>) {
@@ -105,6 +107,7 @@ const WorkoutBuilder = ({ onClose, embedded = false }: WorkoutBuilderProps) => {
     applySwipeProgress(progress);
   }
   function handleTouchEnd(event: React.TouchEvent<HTMLDivElement>) {
+    if (!embedded) return;
     if (swipeStartX.current === null) return;
     const delta = swipeStartX.current - (event.changedTouches[0]?.clientX ?? 0);
     if (delta < -60) {
@@ -125,6 +128,7 @@ const WorkoutBuilder = ({ onClose, embedded = false }: WorkoutBuilderProps) => {
   const [setMenuOpen, setSetMenuOpen] = useState(false);
 
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [confirmSaveOpen, setConfirmSaveOpen] = useState(false);
   const [showAddButton, setShowAddButton] = useState(defaultPreferences.showAddButton);
   const [focusInputOnOpen, setFocusInputOnOpen] = useState(defaultPreferences.focusInputOnOpen);
   const preferencesLoadedRef = useRef(false);
@@ -334,9 +338,9 @@ const WorkoutBuilder = ({ onClose, embedded = false }: WorkoutBuilderProps) => {
     <div
       data-swipe-ignore={embedded ? true : undefined}
       className="fixed inset-0 z-50 flex bg-gradient-to-b from-emerald-50 via-white to-white"
-      onTouchStart={handleTouchStart}
-      onTouchMove={handleTouchMove}
-      onTouchEnd={handleTouchEnd}
+      onTouchStart={embedded ? handleTouchStart : undefined}
+      onTouchMove={embedded ? handleTouchMove : undefined}
+      onTouchEnd={embedded ? handleTouchEnd : undefined}
     >
       <div
         className={`flex h-full w-full flex-col bg-transparent transition-transform duration-300 ${panelClasses}`}
@@ -507,7 +511,9 @@ const WorkoutBuilder = ({ onClose, embedded = false }: WorkoutBuilderProps) => {
               <div className="mb-4 flex items-center justify-between">
                 <div>
                   <p className="text-sm font-semibold text-slate-900">Set yang siap disimpan</p>
-                  <p className="text-[9px] text-slate-400">Atur ulang set sebelum simpan.</p>
+                  <p className="text-[9px] text-slate-400">
+                    Atur ulang set sebelum simpan. Total data: {workoutSession.currentSets.length} set.
+                  </p>
                 </div>
                 <div className="relative" ref={setMenuRef}>
                   <Button
@@ -564,7 +570,7 @@ const WorkoutBuilder = ({ onClose, embedded = false }: WorkoutBuilderProps) => {
             </div>
 
             {workoutSession.stagedMovements.length > 0 && (
-              <div className="space-y-4 rounded-[32px]  p-5 shadow-[0_25px_50px_rgba(15,23,42,0.08)]">
+              <div className="space-y-4 rounded-[32px]  p-5 shadow-[0_25px_50px_rgba(15,23,42,0.08)] bg-white">
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-semibold text-slate-900">Gerakan di sesi ini</p>
@@ -572,7 +578,10 @@ const WorkoutBuilder = ({ onClose, embedded = false }: WorkoutBuilderProps) => {
                   </div>
                 </div>
                 <div className="space-y-4">
-                  {workoutSession.stagedMovements.map((movement) => {
+                  {workoutSession.stagedMovements
+                    .slice()
+                    .reverse()
+                    .map((movement) => {
                     const totalReps = movement.sets.reduce((acc, set) => acc + set.reps, 0);
                     const totalRest = movement.sets.reduce((acc, set) => acc + set.rest, 0);
                     const consistentWeight = movement.sets.every(
@@ -591,7 +600,7 @@ const WorkoutBuilder = ({ onClose, embedded = false }: WorkoutBuilderProps) => {
                     return (
                       <div
                         key={movement.id}
-                        className="rounded-[28px] border border-slate-100  p-4 text-sm text-slate-700 shadow-[0_20px_40px_rgba(15,23,42,0.06)]"
+                        className="rounded-[28px] border border-slate-100  p-4 text-sm text-slate-700 "
                       >
                         <div className="mb-3 flex items-center justify-between">
                           <div>
@@ -651,29 +660,34 @@ const WorkoutBuilder = ({ onClose, embedded = false }: WorkoutBuilderProps) => {
 
           </div>
           <div className="mt-auto px-6 pb-8">
-            {isPlayerRunning ? (
-              <div className="h-14" />
-            ) : (
-              <Button
-                className="group flex h-14 w-full items-center justify-center gap-3 rounded-full bg-indigo-600 text-base font-semibold text-white shadow-[0_30px_60px_rgba(79,70,229,0.35)]"
-                onClick={handleSaveSession}
-              >
-                Simpan Sesi
-              </Button>
-            )}
+            <div className="h-14" />
           </div>
 
         </div>
       </div>
-      {isPlayerRunning && (
-        <Button
-          className="fixed bottom-[calc(var(--player-offset,0px)+50px)] right-5 z-50 size-14 rounded-full bg-indigo-600 text-white shadow-[0_30px_60px_rgba(79,70,229,0.35)]"
-          onClick={handleSaveSession}
-        >
-          <SaveIcon className="size-6" />
-          <span className="sr-only">Simpan Sesi</span>
-        </Button>
-      )}
+      <Button
+        style={{
+          bottom: "calc(max(var(--player-offset, 0px), var(--bottom-nav-height, 0px)) + 0px)",
+        }}
+        className="fixed right-5 z-50 size-14 rounded-full bg-indigo-600 text-white shadow-[0_30px_60px_rgba(79,70,229,0.35)]"
+        onClick={() => setConfirmSaveOpen(true)}
+      >
+        <SaveIcon className="size-6" />
+        <span className="sr-only">Simpan Sesi</span>
+      </Button>
+      <ConfirmModal
+        isOpen={confirmSaveOpen}
+        title="Simpan sesi latihan?"
+        message="Pastikan data sudah benar. Sesi akan disimpan ke riwayat latihan."
+        confirmText="Simpan"
+        cancelText="Batal"
+        variant="overlay"
+        onCancel={() => setConfirmSaveOpen(false)}
+        onConfirm={async () => {
+          await handleSaveSession();
+          setConfirmSaveOpen(false);
+        }}
+      />
     </div>
   );
 };

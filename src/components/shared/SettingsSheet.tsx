@@ -36,7 +36,7 @@ const SettingsSheet = ({
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
         side="bottom"
-        className={`rounded-t-3xl border-none bg-white px-6 pb-8 pt-6 text-slate-900 ${contentClassName ?? ""}`}
+        className={`rounded-t-3xl border-none bg-white px-6 pt-6 text-slate-900 pb-[calc(2rem+var(--bottom-nav-height,0px)+env(safe-area-inset-bottom))] ${contentClassName ?? ""}`}
         onOpenAutoFocus={(event) => {
           if (preventAutoFocus) {
             event.preventDefault();
