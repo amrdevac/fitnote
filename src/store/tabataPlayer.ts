@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { createJSONStorage, persist } from "zustand/middleware";
 import type { ExerciseTimer } from "@/types/timer";
 import { useTimerSettings } from "@/store/timerSettings";
 
@@ -20,6 +21,7 @@ type TabataPlayerStore = {
   currentIndex: number;
   remainingSeconds: number;
   status: PlayerStatus;
+  lastUpdatedAt: number | null;
   loadTimer: (timer: ExerciseTimer) => void;
   play: () => void;
   pause: () => void;
@@ -29,6 +31,15 @@ type TabataPlayerStore = {
   prev: () => void;
   adjustSeconds: (delta: number) => void;
   tick: () => void;
+};
+
+const noopStorage: Storage = {
+  getItem: () => null,
+  setItem: () => {},
+  removeItem: () => {},
+  key: () => null,
+  length: 0,
+  clear: () => {},
 };
 
 const buildQueue = (timer: ExerciseTimer): PlayerStep[] => {
@@ -85,98 +96,193 @@ const buildQueue = (timer: ExerciseTimer): PlayerStep[] => {
   return steps;
 };
 
-export const useTabataPlayerStore = create<TabataPlayerStore>((set, get) => ({
-  currentTimerId: null,
-  currentTimerName: null,
-  queue: [],
-  currentIndex: 0,
-  remainingSeconds: 0,
-  status: "idle",
-  loadTimer: (timer) => {
-    const queue = buildQueue(timer);
-    set({
-      currentTimerId: timer.id,
-      currentTimerName: timer.name,
-      queue,
-      currentIndex: 0,
-      remainingSeconds: queue[0]?.duration ?? 0,
-      status: queue.length ? "paused" : "idle",
-    });
-  },
-  play: () => {
-    const { queue, status, currentIndex } = get();
-    if (!queue.length) return;
-    if (status === "finished") {
-      set({
-        currentIndex: 0,
-        remainingSeconds: queue[0]?.duration ?? 0,
-        status: "running",
-      });
-      return;
+const advanceQueueBySeconds = (
+  queue: PlayerStep[],
+  startIndex: number,
+  startRemaining: number,
+  elapsedSeconds: number,
+) => {
+  if (!queue.length || elapsedSeconds <= 0) {
+    return { currentIndex: startIndex, remainingSeconds: startRemaining, status: "running" as PlayerStatus };
+  }
+  let currentIndex = Math.min(startIndex, queue.length - 1);
+  let remainingSeconds = Math.max(0, startRemaining);
+  let secondsLeft = elapsedSeconds;
+
+  while (secondsLeft > 0) {
+    if (remainingSeconds > 1) {
+      const dec = Math.min(remainingSeconds - 1, secondsLeft);
+      remainingSeconds -= dec;
+      secondsLeft -= dec;
+      if (secondsLeft <= 0) break;
     }
-    if (status === "idle") {
-      set({
-        currentIndex,
-        remainingSeconds: queue[currentIndex]?.duration ?? 0,
-        status: "running",
-      });
-      return;
+
+    secondsLeft -= 1;
+    const nextIndex = currentIndex + 1;
+    if (nextIndex >= queue.length) {
+      return { currentIndex, remainingSeconds: 0, status: "finished" as PlayerStatus };
     }
-    if (status === "paused") {
-      set({ status: "running" });
-    }
-  },
-  pause: () => set({ status: "paused" }),
-  reset: () => {
-    const { queue } = get();
-    set({
-      currentIndex: 0,
-      remainingSeconds: queue[0]?.duration ?? 0,
-      status: queue.length ? "paused" : "idle",
-    });
-  },
-  stop: () => {
-    set({
+    currentIndex = nextIndex;
+    remainingSeconds = queue[currentIndex]?.duration ?? 0;
+  }
+
+  return { currentIndex, remainingSeconds, status: "running" as PlayerStatus };
+};
+
+export const useTabataPlayerStore = create<TabataPlayerStore>()(
+  persist(
+    (set, get) => ({
       currentTimerId: null,
       currentTimerName: null,
       queue: [],
       currentIndex: 0,
       remainingSeconds: 0,
       status: "idle",
-    });
-  },
-  next: () => {
-    const { queue, currentIndex } = get();
-    const nextIndex = currentIndex + 1;
-    if (nextIndex >= queue.length) {
-      set({ status: "finished", remainingSeconds: 0 });
-      return;
-    }
-    set({ currentIndex: nextIndex, remainingSeconds: queue[nextIndex].duration });
-  },
-  prev: () => {
-    const { queue, currentIndex } = get();
-    if (!queue.length) return;
-    const prevIndex = Math.max(0, currentIndex - 1);
-    set({ currentIndex: prevIndex, remainingSeconds: queue[prevIndex].duration });
-  },
-  adjustSeconds: (delta) => {
-    set((state) => ({
-      remainingSeconds: Math.max(1, state.remainingSeconds + delta),
-    }));
-  },
-  tick: () => {
-    const { status, remainingSeconds, queue, currentIndex } = get();
-    if (status !== "running" || !queue.length) return;
-    if (remainingSeconds > 1) {
-      set({ remainingSeconds: remainingSeconds - 1 });
-      return;
-    }
-    const nextIndex = currentIndex + 1;
-    if (nextIndex >= queue.length) {
-      set({ status: "finished", remainingSeconds: 0 });
-      return;
-    }
-    set({ currentIndex: nextIndex, remainingSeconds: queue[nextIndex].duration });
-  },
-}));
+      lastUpdatedAt: null,
+      loadTimer: (timer) => {
+        const queue = buildQueue(timer);
+        set({
+          currentTimerId: timer.id,
+          currentTimerName: timer.name,
+          queue,
+          currentIndex: 0,
+          remainingSeconds: queue[0]?.duration ?? 0,
+          status: queue.length ? "paused" : "idle",
+          lastUpdatedAt: Date.now(),
+        });
+      },
+      play: () => {
+        const { queue, status, currentIndex } = get();
+        if (!queue.length) return;
+        if (status === "finished") {
+          set({
+            currentIndex: 0,
+            remainingSeconds: queue[0]?.duration ?? 0,
+            status: "running",
+            lastUpdatedAt: Date.now(),
+          });
+          return;
+        }
+        if (status === "idle") {
+          set({
+            currentIndex,
+            remainingSeconds: queue[currentIndex]?.duration ?? 0,
+            status: "running",
+            lastUpdatedAt: Date.now(),
+          });
+          return;
+        }
+        if (status === "paused") {
+          set({ status: "running", lastUpdatedAt: Date.now() });
+        }
+      },
+      pause: () => set({ status: "paused", lastUpdatedAt: Date.now() }),
+      reset: () => {
+        const { queue } = get();
+        set({
+          currentIndex: 0,
+          remainingSeconds: queue[0]?.duration ?? 0,
+          status: queue.length ? "paused" : "idle",
+          lastUpdatedAt: Date.now(),
+        });
+      },
+      stop: () => {
+        set({
+          currentTimerId: null,
+          currentTimerName: null,
+          queue: [],
+          currentIndex: 0,
+          remainingSeconds: 0,
+          status: "idle",
+          lastUpdatedAt: Date.now(),
+        });
+      },
+      next: () => {
+        const { queue, currentIndex } = get();
+        const nextIndex = currentIndex + 1;
+        if (nextIndex >= queue.length) {
+          set({ status: "finished", remainingSeconds: 0, lastUpdatedAt: Date.now() });
+          return;
+        }
+        set({
+          currentIndex: nextIndex,
+          remainingSeconds: queue[nextIndex].duration,
+          lastUpdatedAt: Date.now(),
+        });
+      },
+      prev: () => {
+        const { queue, currentIndex } = get();
+        if (!queue.length) return;
+        const prevIndex = Math.max(0, currentIndex - 1);
+        set({
+          currentIndex: prevIndex,
+          remainingSeconds: queue[prevIndex].duration,
+          lastUpdatedAt: Date.now(),
+        });
+      },
+      adjustSeconds: (delta) => {
+        set((state) => ({
+          remainingSeconds: Math.max(1, state.remainingSeconds + delta),
+          lastUpdatedAt: Date.now(),
+        }));
+      },
+      tick: () => {
+        const { status, remainingSeconds, queue, currentIndex } = get();
+        if (status !== "running" || !queue.length) return;
+        if (remainingSeconds > 1) {
+          set({ remainingSeconds: remainingSeconds - 1, lastUpdatedAt: Date.now() });
+          return;
+        }
+        const nextIndex = currentIndex + 1;
+        if (nextIndex >= queue.length) {
+          set({ status: "finished", remainingSeconds: 0, lastUpdatedAt: Date.now() });
+          return;
+        }
+        set({
+          currentIndex: nextIndex,
+          remainingSeconds: queue[nextIndex].duration,
+          lastUpdatedAt: Date.now(),
+        });
+      },
+    }),
+    {
+      name: "fitnote:tabata-player",
+      storage: createJSONStorage(() =>
+        typeof window === "undefined" ? noopStorage : localStorage,
+      ),
+      partialize: (state) => ({
+        currentTimerId: state.currentTimerId,
+        currentTimerName: state.currentTimerName,
+        queue: state.queue,
+        currentIndex: state.currentIndex,
+        remainingSeconds: state.remainingSeconds,
+        status: state.status,
+        lastUpdatedAt: state.lastUpdatedAt,
+      }),
+      onRehydrateStorage: () => (state) => {
+        if (!state) return;
+        if (!state.queue.length) {
+          state.status = "idle";
+          state.lastUpdatedAt = null;
+          return;
+        }
+        const now = Date.now();
+        if (state.status === "running" && state.lastUpdatedAt) {
+          const elapsedSeconds = Math.floor((now - state.lastUpdatedAt) / 1000);
+          if (elapsedSeconds > 0) {
+            const advanced = advanceQueueBySeconds(
+              state.queue,
+              state.currentIndex,
+              state.remainingSeconds,
+              elapsedSeconds,
+            );
+            state.currentIndex = advanced.currentIndex;
+            state.remainingSeconds = advanced.remainingSeconds;
+            state.status = advanced.status;
+          }
+        }
+        state.lastUpdatedAt = now;
+      },
+    },
+  ),
+);

@@ -1,15 +1,16 @@
 'use client';
 
-import SwipeNavigation from "@/components/SwipeNavigation";
 import ExerciseTimerList from "@/components/timers/ExerciseTimerList";
+import BottomNav from "@/components/shared/BottomNav";
 
 const TimerPage = () => {
   return (
-    <SwipeNavigation rightRoute="/" className="min-h-dvh bg-slate-50">
+    <div className="min-h-dvh bg-slate-50 pb-24">
       <main>
         <ExerciseTimerList />
       </main>
-    </SwipeNavigation>
+      <BottomNav />
+    </div>
   );
 };
 

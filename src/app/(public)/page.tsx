@@ -2,10 +2,10 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import SwipeNavigation from "@/components/SwipeNavigation";
 import MobileWorkoutHome from "@/components/workouts/MobileWorkoutHome";
 import WorkoutBuilder from "@/components/workouts/WorkoutBuilder";
 import ExerciseTimerList from "@/components/timers/ExerciseTimerList";
+import BottomNav from "@/components/shared/BottomNav";
 
 export default function Home() {
   const router = useRouter();
@@ -75,20 +75,17 @@ export default function Home() {
     return () => window.removeEventListener("popstate", handlePopState);
   }, [isTimerOpen]);
 
+  const showBottomNav = !isTimerOpen && !isBuilderOpen;
+
   return (
-    <SwipeNavigation
-      onSwipeLeft={openBuilder}
-      onSwipeRight={openTimer}
-      className="bg-slate-50"
-    >
+    <div className="min-h-dvh bg-slate-50 pb-24">
       <main>
         <MobileWorkoutHome onOpenBuilder={openBuilder} />
       </main>
-      
+
       {isTimerOpen && <ExerciseTimerList embedded onClose={closeTimer} />}
-      {isBuilderOpen && (
-        <WorkoutBuilder embedded onClose={closeBuilder} />
-      )}
-    </SwipeNavigation>
+      {isBuilderOpen && <WorkoutBuilder embedded onClose={closeBuilder} />}
+      {showBottomNav && <BottomNav />}
+    </div>
   );
 }
