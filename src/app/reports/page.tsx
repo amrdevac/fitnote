@@ -530,7 +530,7 @@ export default function ReportsPage() {
         <PageHeader title="Laporan" onBack={() => router.push("/")} backPosition="left" />
 
         <section className="grid gap-4 sm:grid-cols-2">
-          <div className="rounded-md   px-5 ">
+          <div className="rounded-md px-5 report-fade-up report-delay-1">
             <p className="text-center text-[11px] font-semibold uppercase tracking-[0.35em] text-slate-400">
               Top Exercises
             </p>
@@ -591,7 +591,7 @@ export default function ReportsPage() {
           </div>
           <div
             ref={bestLiftScrollerRef}
-            className="no-scrollbar flex snap-x snap-mandatory gap-4 overflow-x-auto pb-2 pr-4 pt-4"
+            className="no-scrollbar flex snap-x snap-mandatory gap-4 overflow-x-auto pb-2 pr-4 pt-4 report-fade-up report-delay-2"
           >
             {bestLiftCards.map((movement, index) => (
               <div

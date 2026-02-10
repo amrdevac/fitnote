@@ -81,11 +81,11 @@ const ConfirmModal: React.FC<ConfirmModalProps> = ({
     return createPortal(
       <div className="fixed inset-0 z-[9999] flex items-center justify-center px-4 py-6">
         <div
-          className="absolute inset-0 bg-slate-900/70 backdrop-blur"
+          className="confirm-modal-backdrop absolute inset-0 bg-slate-900/70 backdrop-blur"
           onClick={handleClose}
           aria-hidden="true"
         />
-        <div className="relative z-10 w-full max-w-sm rounded-[28px] border border-violet-100 bg-violet-50/90 px-6 py-5 text-slate-900 shadow-2xl">
+        <div className="confirm-modal-panel relative z-10 w-full max-w-sm rounded-[28px] border border-violet-100 bg-violet-50/90 px-6 py-5 text-slate-900 shadow-2xl">
           <div className="flex items-start justify-between gap-4">
             <div>
               <h3 className="text-base font-semibold text-violet-950">{title}</h3>
@@ -106,7 +106,7 @@ const ConfirmModal: React.FC<ConfirmModalProps> = ({
               onClick={onCancel}
               type="button"
               disabled={loading}
-              className="h-auto px-0 text-sm font-semibold uppercase tracking-wide text-violet-500 hover:bg-transparent hover:text-violet-700"
+              className="h-auto px-0 text-sm font-semibold uppercase tracking-wide text-slate-500 hover:bg-transparent hover:text-slate-700"
             >
               {cancelText}
             </Button>

@@ -320,7 +320,9 @@ const TabataPlayerBar = () => {
       )}
       <div
         style={{ bottom: "var(--bottom-nav-height, 0px)" }}
-        className={`fixed inset-x-0 z-50 bg-white/95 shadow-[0_-12px_30px_rgba(15,23,42,0.12)] backdrop-blur transition-transform duration-300 ${isClosing ? "translate-y-full" : "translate-y-0"}`}
+        className={`fixed inset-x-0 z-50 bg-white/95 shadow-[0_-12px_30px_rgba(15,23,42,0.12)] backdrop-blur transition-transform duration-300 ${
+          isClosing ? "translate-y-full" : "translate-y-0"
+        }`}
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
