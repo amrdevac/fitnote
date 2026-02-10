@@ -11,7 +11,7 @@ export type FitnotePreferences = {
 };
 
 export const defaultPreferences: FitnotePreferences = {
-  showAddButton: true,
+  showAddButton: false,
   focusInputOnOpen: true,
 };
 

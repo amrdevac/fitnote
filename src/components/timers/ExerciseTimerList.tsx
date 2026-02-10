@@ -220,9 +220,7 @@ const ExerciseTimerList = ({ onClose, embedded = false }: ExerciseTimerListProps
         >
           <PageHeader
             title="Pengelolaan Timer"
-            onBack={closePanel}
             onSettings={() => setSettingsOpen(true)}
-            backPosition="right"
             className="mb-3 pb-6 pt-8"
           />
 

@@ -527,7 +527,7 @@ export default function ReportsPage() {
       style={{ background: "linear-gradient(180deg, #F1FBF6 0%, #FFFFFF 40%)" }}
     >
       <main className="mx-auto flex w-full max-w-2xl flex-col gap-6 px-5 pb-10 pt-8">
-        <PageHeader title="Laporan" onBack={() => router.push("/")} backPosition="left" />
+        <PageHeader title="Laporan" />
 
         <section className="grid gap-4 sm:grid-cols-2">
           <div className="rounded-md px-5 report-fade-up report-delay-1">

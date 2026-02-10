@@ -175,9 +175,16 @@ const MobileWorkoutHome = ({ onOpenBuilder }: MobileWorkoutHomeProps) => {
   };
 
   useEffect(() => {
+    if (!workoutSession.isInitialized) return;
     setSessions(workoutSession.sessions);
     setRenameSession(workoutSession.renameSession);
-  }, [setSessions, setRenameSession, workoutSession.sessions, workoutSession.renameSession]);
+  }, [
+    setSessions,
+    setRenameSession,
+    workoutSession.sessions,
+    workoutSession.renameSession,
+    workoutSession.isInitialized,
+  ]);
   
   const clearSheetTimeout = () => {
     if (sheetAnimationTimeout.current) {
@@ -305,6 +312,7 @@ const MobileWorkoutHome = ({ onOpenBuilder }: MobileWorkoutHomeProps) => {
           onArchive={handleArchiveSelected}
         />
       )}
+      
       <MobileWorkoutSessionsSection
         onOpenArchive={() => router.push("/archive")}
         onOpenReport={() => router.push("/reports")}

@@ -127,7 +127,7 @@ const MobileWorkoutSessionsSection = ({
     <div className="flex grow flex-col">
       <header className="px-5 pb-6 pt-10">
         <div className="flex items-start justify-between">
-          <div>
+          <div className="home-fade-up" style={{ animationDelay: "140ms" }}>
             <p className="text-xs font-semibold uppercase tracking-[0.2em] text-emerald-600">
               Consistency is key
             </p>
@@ -136,7 +136,7 @@ const MobileWorkoutSessionsSection = ({
               {visibleSessions.length} sesi · {totalMovements} gerakan
             </p>
           </div>
-          <div className="relative" ref={menuRef}>
+          <div className="relative home-fade-up" style={{ animationDelay: "220ms" }} ref={menuRef}>
             <button
               type="button"
               onClick={() => setMenuOpen((prev) => !prev)}
@@ -145,6 +145,7 @@ const MobileWorkoutSessionsSection = ({
             >
               <MoreVerticalIcon className="size-5" />
             </button>
+            
             {menuOpen && (
               <div className="absolute right-0 top-14 z-20 w-52 rounded-2xl border border-slate-100 bg-white p-2 text-sm shadow-xl">
                 <button
@@ -219,7 +220,7 @@ const MobileWorkoutSessionsSection = ({
         {visibleSessions
           .slice()
           .sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1))
-          .map((session) => {
+          .map((session, index) => {
             const isExpanded = expandedSessions.has(session.id);
             const isSelected = selectedSessions.has(session.id);
             const sessionLabel = formatDate(session.createdAt);
@@ -241,7 +242,8 @@ const MobileWorkoutSessionsSection = ({
                 ref={(node) => {
                   sessionRefs.current[session.id] = node;
                 }}
-                className={`relative scroll-mt-24 rounded-[32px] border-0 bg-white/95 shadow-[0_30px_60px_rgba(15,23,42,0.12)] transition ${isSelected ? "ring-2 ring-slate-900/20" : ""}`}
+                className={`relative scroll-mt-24 rounded-[32px] border-0 bg-white/95 shadow-[0_30px_60px_rgba(15,23,42,0.12)] transition home-fade-up ${isSelected ? "ring-2 ring-slate-900/20" : ""}`}
+                style={{ animationDelay: `${260 + index * 90}ms` }}
                 onPointerDown={(event) => handleCardPointerDown(session.id, event)}
                 onPointerUp={handleCardPointerUp}
                 onPointerLeave={handleCardPointerLeave}
@@ -260,7 +262,7 @@ const MobileWorkoutSessionsSection = ({
                     {isSelected && <CheckIcon className="size-4" />}
                   </div>
                 )}
-                <CardHeader className="pb-2 pt-4">
+                <CardHeader className="pt-4">
                   <div className="flex items-start justify-between ">
                     <div>
                       <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-emerald-500">
@@ -290,7 +292,7 @@ const MobileWorkoutSessionsSection = ({
                       />
                     ) : (
                       <CardTitle
-                        className="mt-2 text-2xl font-semibold text-slate-800"
+                        className="text-xl font-semibold text-slate-800"
                         onDoubleClick={(event) => {
                           event.stopPropagation();
                           startEditingTitle(session.id, sessionTitle);
@@ -299,7 +301,7 @@ const MobileWorkoutSessionsSection = ({
                         {sessionTitle}
                       </CardTitle>
                     )}
-                    <p className="text-sm text-slate-400">
+                    <p className="text-xs text-slate-400">
                       {sessionLabel} · {estimatedDuration} mnt
                     </p>
                   </div>
@@ -369,6 +371,7 @@ const MobileWorkoutSessionsSection = ({
                           }}
                         >
                           <div className="flex items-center justify-between">
+                            
                             <div className="flex items-center gap-3">
                               <span
                                 className="inline-flex h-10 w-1 rounded-full"
@@ -376,7 +379,7 @@ const MobileWorkoutSessionsSection = ({
                                   backgroundColor: movementIndex === 0 ? "#fb923c" : accentColor,
                                 }}
                               />
-                              <p className="text-lg font-semibold text-slate-900">
+                              <p className=" font-semibold text-slate-900">
                                 {movement.name}
                               </p>
                             </div>
@@ -394,7 +397,7 @@ const MobileWorkoutSessionsSection = ({
                                   <p className="text-[11px] uppercase tracking-wide text-slate-400">
                                     {label}
                                   </p>
-                                  <p className="text-base font-semibold text-slate-800">
+                                  <p className="text-xs font-semibold text-slate-800">
                                     {value}
                                   </p>
                                 </div>

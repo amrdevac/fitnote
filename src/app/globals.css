@@ -240,6 +240,19 @@
   }
 }
 
+.home-fade-up {
+  opacity: 0;
+  transform: translateY(18px);
+  animation: home-fade-up 320ms ease-out forwards;
+}
+
+@keyframes home-fade-up {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 .confirm-modal-backdrop {
   animation: confirm-fade-in 180ms ease-out;
 }

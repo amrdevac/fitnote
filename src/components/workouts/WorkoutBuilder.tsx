@@ -363,9 +363,7 @@ const WorkoutBuilder = ({ onClose, embedded = false }: WorkoutBuilderProps) => {
           <div className="px-6 pb-6 pt-8">
             <PageHeader
               title="Pengelolaan Aktivitas"
-              onBack={closePanel}
               onSettings={() => setSettingsOpen(true)}
-              backPosition="left"
             />
             <SettingsSheet
               title="Pengaturan Aktivitas"
