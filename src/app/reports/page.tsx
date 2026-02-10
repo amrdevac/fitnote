@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import PageHeader from "@/components/shared/PageHeader";
 import useWorkoutSession from "@/hooks/useWorkoutSession";
 import type { WorkoutMovement } from "@/types/workout";
-import { ChartArea, MedalIcon } from "lucide-react";
+import { ChartArea, MedalIcon, Repeat, TrendingUp } from "lucide-react";
 import {
   LineChart,
   Line,
@@ -86,12 +86,20 @@ export default function ReportsPage() {
     movement: WorkoutMovement;
     sessionLabel: string;
   } | null>(null);
+  const showMovementPicker = !activeMovementName;
+  const [visibleLines, setVisibleLines] = useState({
+    weight: true,
+    reps: true,
+    rest: true,
+  });
   const [isSheetMounted, setIsSheetMounted] = useState(false);
   const [isSheetVisible, setIsSheetVisible] = useState(false);
   const [sheetDragOffset, setSheetDragOffset] = useState(0);
   const [sheetDragStart, setSheetDragStart] = useState<number | null>(null);
   const sheetAnimationDuration = 260;
   const sheetCloseThreshold = 120;
+  const cardsScrollerRef = useRef<HTMLDivElement | null>(null);
+  const [activeCardIndex, setActiveCardIndex] = useState(0);
 
   const stats = useMemo(() => {
     const start = parseLocalDate(startDate, false);
@@ -223,8 +231,12 @@ export default function ReportsPage() {
       recordSets = Math.max(recordSets, movement.sets.length);
       movement.sets.forEach((set) => {
         totalSets += 1;
-        recordWeight = Math.max(recordWeight, set.weight);
-        recordReps = Math.max(recordReps, set.reps);
+        if (set.weight > recordWeight) {
+          recordWeight = set.weight;
+          recordReps = set.reps;
+        } else if (set.weight === recordWeight) {
+          recordReps = Math.max(recordReps, set.reps);
+        }
       });
     });
 
@@ -304,6 +316,31 @@ export default function ReportsPage() {
     };
   }, [activeMovementName, workoutSession.sessions, stats.start, stats.end]);
 
+  const cardCount = activeMovementName && activeMovementSummary ? (timeline ? 2 : 1) : 0;
+
+  useEffect(() => {
+    const node = cardsScrollerRef.current;
+    if (!node || cardCount <= 1) return;
+    const handleScroll = () => {
+      const children = Array.from(node.children) as HTMLElement[];
+      if (!children.length) return;
+      const current = node.scrollLeft;
+      let bestIndex = 0;
+      let bestDistance = Number.POSITIVE_INFINITY;
+      children.forEach((child, index) => {
+        const distance = Math.abs(child.offsetLeft - current);
+        if (distance < bestDistance) {
+          bestDistance = distance;
+          bestIndex = index;
+        }
+      });
+      setActiveCardIndex(bestIndex);
+    };
+    handleScroll();
+    node.addEventListener("scroll", handleScroll, { passive: true });
+    return () => node.removeEventListener("scroll", handleScroll);
+  }, [cardCount]);
+
   const openMovementSessionSheet = (movement: WorkoutMovement, sessionLabel: string) => {
     setActiveMovementSession({ movement, sessionLabel });
     setSheetDragOffset(0);
@@ -369,7 +406,7 @@ export default function ReportsPage() {
       <main className="mx-auto flex w-full max-w-2xl flex-col gap-6 px-5 pb-10 pt-8">
         <PageHeader title="Laporan" onBack={() => router.push("/")} backPosition="left" />
 
-        <section className="rounded-3xl border border-slate-100 bg-white p-5 shadow-[0_20px_40px_rgba(15,23,42,0.08)]">
+        <section className="rounded-md border border-slate-100 bg-white p-5 shadow-[0_20px_40px_rgba(15,23,42,0.08)]">
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
             Rentang tanggal
           </p>
@@ -378,7 +415,7 @@ export default function ReportsPage() {
               Mulai
               <input
                 type="date"
-                className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700"
+                className="mt-2 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700"
                 value={startDate}
                 onChange={(event) => setStartDate(event.target.value)}
               />
@@ -387,7 +424,7 @@ export default function ReportsPage() {
               Selesai
               <input
                 type="date"
-                className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700"
+                className="mt-2 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700"
                 value={endDate}
                 onChange={(event) => setEndDate(event.target.value)}
               />
@@ -399,7 +436,7 @@ export default function ReportsPage() {
         </section>
 
         <section className="grid gap-4 sm:grid-cols-2">
-          <div className="rounded-3xl border border-slate-100 bg-white p-5 shadow-[0_20px_40px_rgba(15,23,42,0.08)]">
+          <div className="rounded-md border border-slate-100 bg-white p-5 shadow-[0_20px_40px_rgba(15,23,42,0.08)]">
             <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
               Exercise paling sering
             </p>
@@ -420,17 +457,16 @@ export default function ReportsPage() {
                     <div key={item.name} className="flex flex-col items-center gap-2">
                       <div className="flex items-center gap-1 text-xs font-semibold text-slate-500">
                         <MedalIcon
-                          className={`size-4 ${
-                            rank === 1
+                          className={`size-4 ${rank === 1
                               ? "text-amber-500"
                               : rank === 2
                                 ? "text-slate-400"
                                 : "text-orange-700"
-                          }`}
+                            }`}
                         />
                         <span>#{rank}</span>
                       </div>
-                      <div className={`flex w-full items-end justify-center rounded-2xl ${heights[index]} ${bg[index]}`}>
+                      <div className={`flex w-full items-end justify-center rounded-md ${heights[index]} ${bg[index]}`}>
                         <div className="flex w-full flex-col items-center gap-1 px-2 py-2 text-center text-[10px] font-semibold uppercase">
                           <span className="block w-full truncate">{item.name}</span>
                         </div>
@@ -442,7 +478,7 @@ export default function ReportsPage() {
               </div>
             )}
           </div>
-          <div className="rounded-3xl border border-slate-100 bg-white p-5 shadow-[0_20px_40px_rgba(15,23,42,0.08)]">
+          <div className="rounded-md border border-slate-100 bg-white p-5 shadow-[0_20px_40px_rgba(15,23,42,0.08)]">
             <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
               Beban paling berat
             </p>
@@ -457,190 +493,283 @@ export default function ReportsPage() {
           </div>
         </section>
 
-        <section className="rounded-3xl border border-slate-100 bg-white p-5 shadow-[0_20px_40px_rgba(15,23,42,0.08)]">
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
-            Daftar gerakan
-          </p>
-          <input
-            className="mt-3 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700"
-            placeholder="Cari gerakan..."
-            value={movementFilter}
-            onChange={(event) => setMovementFilter(event.target.value)}
-          />
-          <div className="mt-4 max-h-72 space-y-3 overflow-y-auto pr-1">
-            {filteredMovementOptions.length === 0 && (
-              <p className="text-sm text-slate-400">Gerakan tidak ditemukan.</p>
-            )}
-            {filteredMovementOptions.map((movement) => (
+        <section className="sticky top-0 z-20 rounded-md border border-slate-100 bg-white p-5 shadow-[0_20px_40px_rgba(15,23,42,0.08)]">
+          {activeMovementName ? (
+            <div className="flex items-center justify-between">
+              <span className="text-lg font-semibold text-slate-900">
+                {activeMovementName}
+              </span>
               <button
-                key={movement.id}
                 type="button"
-                className={`flex w-full items-center justify-between rounded-2xl border px-4 py-3 text-left transition ${
-                  activeMovementName?.toLowerCase() === movement.name.toLowerCase()
-                    ? "border-indigo-200 bg-indigo-50"
-                    : "border-slate-100 bg-white"
-                }`}
-                onClick={() => setActiveMovementName(movement.name)}
+                onClick={() => {
+                  setActiveMovementName(null);
+                  setMovementFilter("");
+                }}
+                className="rounded-md border border-slate-200 px-2.5 py-1 text-[10px] font-semibold text-slate-500 transition hover:border-slate-300 hover:text-slate-700"
               >
-                <div>
-                  <p className="text-sm font-semibold text-slate-900">{movement.name}</p>
-                </div>
+                X
               </button>
-            ))}
+            </div>
+          ) : (
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
+              Daftar gerakan
+            </p>
+          )}
+          <div
+            className={`overflow-hidden transition-all duration-300 ${showMovementPicker ? "mt-3 max-h-20 opacity-100" : "mt-0 max-h-0 opacity-0"}`}
+          >
+            <input
+              className="w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700"
+              placeholder="Cari gerakan..."
+              value={movementFilter}
+              onChange={(event) => setMovementFilter(event.target.value)}
+              disabled={!showMovementPicker}
+            />
+          </div>
+          <div
+            className={`overflow-hidden transition-all duration-300 ${showMovementPicker ? "mt-4 max-h-72 opacity-100" : "mt-0 max-h-0 opacity-0"}`}
+          >
+            <div className="space-y-3 overflow-y-auto pr-1">
+              {filteredMovementOptions.length === 0 && (
+                <p className="text-sm text-slate-400">Gerakan tidak ditemukan.</p>
+              )}
+              {filteredMovementOptions.map((movement) => (
+                <button
+                  key={movement.id}
+                  type="button"
+                  className="flex w-full items-center justify-between rounded-md border border-slate-100 bg-white px-4 py-3 text-left transition"
+                  onClick={() => setActiveMovementName(movement.name)}
+                >
+                  <div>
+                    <p className="text-sm font-semibold text-slate-900">{movement.name}</p>
+                  </div>
+                </button>
+              ))}
+            </div>
           </div>
         </section>
 
         {activeMovementName && activeMovementSummary && (
-          <section className="rounded-3xl border border-slate-100 bg-white p-5 shadow-[0_20px_40px_rgba(15,23,42,0.08)]">
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
-              Detail {activeMovementName}
-            </p>
-            {activeMovementSummary.totalSessions === 0 ? (
-              <p className="mt-3 text-sm text-slate-400">
-                Belum ada data untuk gerakan ini di rentang tanggal.
-              </p>
-            ) : (
-              <div className="mt-4 space-y-4">
-                <div className="flex flex-wrap gap-2 text-xs text-slate-500">
-                  <span className="rounded-full bg-slate-100 px-3 py-1">
-                    {activeMovementSummary.totalSessions} sesi
-                  </span>
-                  <span className="rounded-full bg-slate-100 px-3 py-1">
-                    {activeMovementSummary.totalSets} set
-                  </span>
-                </div>
-                <div className="grid gap-3 sm:grid-cols-3">
-                  <div className="rounded-2xl border border-slate-100 bg-slate-50 px-4 py-3">
-                    <p className="text-xs uppercase tracking-wide text-slate-400">Rekor beban</p>
-                    <p className="mt-1 text-lg font-semibold text-slate-900">
-                      {activeMovementSummary.recordWeight}kg
-                    </p>
-                  </div>
-                  <div className="rounded-2xl border border-slate-100 bg-slate-50 px-4 py-3">
-                    <p className="text-xs uppercase tracking-wide text-slate-400">Rekor reps</p>
-                    <p className="mt-1 text-lg font-semibold text-slate-900">
-                      {activeMovementSummary.recordReps} reps
-                    </p>
-                  </div>
-                  <div className="rounded-2xl border border-slate-100 bg-slate-50 px-4 py-3">
-                    <p className="text-xs uppercase tracking-wide text-slate-400">Rekor set</p>
-                    <p className="mt-1 text-lg font-semibold text-slate-900">
-                      {activeMovementSummary.recordSets} set
-                    </p>
-                  </div>
-                </div>
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
-                    Hari latihan
-                  </p>
-                  <div className="mt-3 grid gap-3">
-                    {activeMovementSummary.sessions.map((session) => (
-                      <button
-                        key={session.sessionId}
-                        type="button"
-                        className="flex items-center justify-between rounded-2xl border border-slate-100 bg-white px-4 py-3 text-left transition hover:border-indigo-200 hover:bg-indigo-50"
-                        onClick={() =>
-                          openMovementSessionSheet(session.movement, session.sessionLabel)
-                        }
-                      >
-                        <div>
-                          <p className="text-sm font-semibold text-slate-900">{session.sessionLabel}</p>
-                          <p className="text-xs text-slate-500">
-                            {session.movement.sets.length} set
-                          </p>
-                        </div>
-                        <div className="text-right text-xs text-slate-500">
-                          <p className="font-semibold text-slate-900">
-                            {Math.max(...session.movement.sets.map((set) => set.weight))}kg
-                          </p>
-                          <p>Max beban</p>
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                </div>
+          <section className="space-y-3">
+            {cardCount > 1 && (
+              <div className="flex items-center justify-center gap-2">
+                {Array.from({ length: cardCount }).map((_, index) => (
+                  <span
+                    key={`card-dot-${index}`}
+                    className={`h-1.5 w-1.5 rounded-full transition ${
+                      activeCardIndex === index ? "bg-slate-900" : "bg-slate-300"
+                    }`}
+                  />
+                ))}
               </div>
             )}
-          </section>
-        )}
+            <div
+              ref={cardsScrollerRef}
+              className="flex snap-x snap-mandatory gap-4 overflow-x-auto pb-2 pr-6"
+            >
+              <section className="min-w-[100%] snap-start rounded-md border border-slate-100 bg-white p-5 ">
+                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
+                  Summary
+                   {/* {activeMovementName} */}
+                </p>
+                {activeMovementSummary.totalSessions === 0 ? (
+                  <p className="mt-3 text-sm text-slate-400">
+                    Belum ada data untuk gerakan ini di rentang tanggal.
+                  </p>
+                ) : (
+                  <div className="mt-4 space-y-4">
+                    <div className="flex flex-wrap gap-2 text-xs text-slate-500">
+                      <span className="rounded-md bg-slate-100 px-3 py-1">
+                        {activeMovementSummary.totalSessions} sesi
+                      </span>
+                      <span className="rounded-md bg-slate-100 px-3 py-1">
+                        {activeMovementSummary.totalSets} set
+                      </span>
+                    </div>
+                    <div className="flex justify-between gap-3 sm:grid-cols-2">
+                      <div className="rounded-md border w-full border-slate-100 bg-slate-50 px-4 py-3">
+                        <p className="text-xs uppercase tracking-wide text-slate-400 flex items-center  gap-2"><TrendingUp size={15}/>Max</p>
+                        <p className="mt-1 text-lg font-semibold text-slate-900">
+                          {activeMovementSummary.recordWeight}kg
+                        </p>
+                      </div>
+                      <div className="rounded-md border w-full border-slate-100 bg-slate-50 px-4 py-3">
+                        <p className="text-xs uppercase tracking-wide text-slate-400 flex items-center  gap-2"><Repeat size={15}/>Max</p>
+                        <p className="mt-1 text-lg font-semibold text-slate-900">
+                          {activeMovementSummary.recordReps} reps
+                        </p>
+                      </div>
+                    </div>
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
+                        Hari latihan
+                      </p>
+                      <div className="mt-3 grid gap-3">
+                        {activeMovementSummary.sessions.map((session) => (
+                          <button
+                            key={session.sessionId}
+                            type="button"
+                            className="flex items-center justify-between rounded-md border border-slate-100 bg-white px-4 py-3 text-left transition hover:border-indigo-200 hover:bg-indigo-50"
+                            onClick={() =>
+                              openMovementSessionSheet(session.movement, session.sessionLabel)
+                            }
+                          >
+                            <div>
+                              <p className="text-sm font-semibold text-slate-900">{session.sessionLabel}</p>
+                              <p className="text-xs text-slate-500">
+                                {session.movement.sets.length} set
+                              </p>
+                            </div>
+                            <div className="text-right text-xs text-slate-500">
+                              <p className="font-semibold text-slate-900">
+                                {Math.max(...session.movement.sets.map((set) => set.weight))}kg
+                              </p>
+                              <p>Max beban</p>
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </section>
 
-        {timeline && (
-          <section className="rounded-3xl border border-slate-100 bg-white p-5 shadow-[0_20px_40px_rgba(15,23,42,0.08)]">
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400 flex items-center gap-2 mb-2">
-              <ChartArea/> {activeMovementName}
-            </p>
-            <div className=" px-0">
-              <div className=" h-52 w-full">
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart
-                    data={timeline.points.map((point, index) => ({
-                      index: index + 1,
-                      weight: point.weight,
-                      reps: point.reps,
-                      rest: point.rest,
-                      setIndex: point.setIndex,
-                    }))}
-                    margin={{ top: 20, right: 14, left: 6, bottom: 6 }}
-                  >
-                    <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                    <XAxis dataKey="index" tick={{ fontSize: 9 }} tickMargin={6} padding={{ left: 16, right: 16 }} />
-                    <YAxis
-                      tick={{ fontSize: 9 }}
-                      width={20}
-                      tickMargin={10}
-                      axisLine={true}
-                      padding={{ top: 17, bottom: 6 }}
-                    />
-                    <Tooltip
-                      formatter={(value, name) => {
-                        if (name === "weight") return [`${value} kg`, "Beban"];
-                        if (name === "reps") return [`${value} reps`, "Reps"];
-                        return [`${value} dtk`, "Istirahat"];
-                      }}
-                      labelFormatter={(label) => `Set ${label}`}
-                    />
-                    <Line
-                      type="monotone"
-                      dataKey="weight"
-                      stroke="#22c55e"
-                      strokeWidth={3}
-                      dot={{ r: 4 }}
-                      label={{ position: "top", fontSize: 9, fill: "#4b5563", offset: 6 }}
-                    />
-                    <Line
-                      type="monotone"
-                      dataKey="reps"
-                      stroke="#38bdf8"
-                      strokeWidth={2}
-                      dot={{ r: 3 }}
-                      label={{ position: "top", fontSize: 9, fill: "#4b5563", offset: 6 }}
-                    />
-                    <Line
-                      type="monotone"
-                      dataKey="rest"
-                      stroke="#a855f7"
-                      strokeWidth={2}
-                      dot={{ r: 3 }}
-                      label={{ position: "top", fontSize: 9, fill: "#4b5563", offset: 6 }}
-                    />
-                  </LineChart>
-                </ResponsiveContainer>
-              </div>
-              <div className="mt-3 flex flex-wrap gap-3 text-[11px] text-slate-500">
-                <span className="flex items-center gap-2">
-                  <span className="h-2 w-2 rounded-full bg-[#22c55e]" />
-                  Beban (kg)
-                </span>
-                <span className="flex items-center gap-2">
-                  <span className="h-2 w-2 rounded-full bg-[#38bdf8]" />
-                  Reps
-                </span>
-                <span className="flex items-center gap-2">
-                  <span className="h-2 w-2 rounded-full bg-[#a855f7]" />
-                  Istirahat (dtk)
-                </span>
-              </div>
+              {timeline && (
+                <section className="min-w-[110%] snap-start rounded-md border border-slate-100 bg-white p-5 ">
+                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400 flex items-center gap-2 mb-2">
+                    <ChartArea /> Chart
+                    {/* {activeMovementName} */}
+                  </p>
+                  <div className="mb-3 flex flex-wrap gap-2 text-[11px]">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setVisibleLines((prev) => ({ ...prev, weight: !prev.weight }))
+                      }
+                      className={`rounded-md border px-2.5 py-1 font-semibold transition ${
+                        visibleLines.weight
+                          ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+                          : "border-slate-200 bg-white text-slate-400"
+                      }`}
+                    >
+                      Beban
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setVisibleLines((prev) => ({ ...prev, reps: !prev.reps }))}
+                      className={`rounded-md border px-2.5 py-1 font-semibold transition ${
+                        visibleLines.reps
+                          ? "border-sky-200 bg-sky-50 text-sky-700"
+                          : "border-slate-200 bg-white text-slate-400"
+                      }`}
+                    >
+                      Reps
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setVisibleLines((prev) => ({ ...prev, rest: !prev.rest }))}
+                      className={`rounded-md border px-2.5 py-1 font-semibold transition ${
+                        visibleLines.rest
+                          ? "border-fuchsia-200 bg-fuchsia-50 text-fuchsia-700"
+                          : "border-slate-200 bg-white text-slate-400"
+                      }`}
+                    >
+                      Istirahat
+                    </button>
+                  </div>
+                  <div className="px-0">
+                    <div className="h-52 w-full">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <LineChart
+                          data={timeline.points.map((point, index) => ({
+                            index: index + 1,
+                            weight: point.weight,
+                            reps: point.reps,
+                            rest: point.rest,
+                            setIndex: point.setIndex,
+                          }))}
+                          margin={{ top: 20, right: 14, left: 6, bottom: 6 }}
+                        >
+                          <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                          <XAxis dataKey="index" tick={{ fontSize: 9 }} tickMargin={6} padding={{ left: 16, right: 16 }} />
+                          <YAxis
+                            tick={{ fontSize: 9 }}
+                            width={20}
+                            tickMargin={10}
+                            axisLine={true}
+                            padding={{ top: 17, bottom: 6 }}
+                          />
+                          <Tooltip
+                            labelClassName="text-[10px] font-light"
+                            wrapperClassName="text-[10px]"
+                            formatter={(value, name) => {
+                              if (name === "weight") return [`${value} kg`, "Beban"];
+                              if (name === "reps") return [`${value} reps`, "Reps"];
+                              return [`${value} dtk`, "Ist"];
+                            }}
+                            labelFormatter={(label) => `Set ${label}`}
+                            separator=" "
+                            contentStyle={{
+                              padding: "6px 8px",
+                              borderRadius: "10px",
+                              border: "1px solid rgba(148,163,184,0.16)",
+                              boxShadow: "0 1px 2px rgba(15,23,42,0.06)",
+                            }}
+                            itemStyle={{ padding: 0, margin: "2px 0" }}
+                            labelStyle={{ marginBottom: 4 }}
+                          />
+                          {visibleLines.weight && (
+                            <Line
+                              type="monotone"
+                              dataKey="weight"
+                              stroke="#6ee7b7"
+                              strokeWidth={3}
+                              dot={{ r: 4 }}
+                              label={{ position: "top", fontSize: 9, fill: "#0f172a", offset: 6 }}
+                            />
+                          )}
+                          {visibleLines.reps && (
+                            <Line
+                              type="monotone"
+                              dataKey="reps"
+                              stroke="#93c5fd"
+                              strokeWidth={2}
+                              dot={{ r: 3 }}
+                              label={{ position: "top", fontSize: 9, fill: "#0f172a", offset: 6 }}
+                            />
+                          )}
+                          {visibleLines.rest && (
+                            <Line
+                              type="monotone"
+                              dataKey="rest"
+                              stroke="#d8b4fe"
+                              strokeWidth={2}
+                              dot={{ r: 3 }}
+                              label={{ position: "top", fontSize: 9, fill: "#0f172a", offset: 6 }}
+                            />
+                          )}
+                        </LineChart>
+                      </ResponsiveContainer>
+                    </div>
+                    <div className="mt-3 flex flex-wrap gap-3 text-[11px] text-slate-500">
+                      <span className={`flex items-center gap-2 ${visibleLines.weight ? "" : "opacity-40"}`}>
+                        <span className="h-2 w-2 rounded-full bg-[#6ee7b7]" />
+                        Beban (kg)
+                      </span>
+                      <span className={`flex items-center gap-2 ${visibleLines.reps ? "" : "opacity-40"}`}>
+                        <span className="h-2 w-2 rounded-full bg-[#93c5fd]" />
+                        Reps
+                      </span>
+                      <span className={`flex items-center gap-2 ${visibleLines.rest ? "" : "opacity-40"}`}>
+                        <span className="h-2 w-2 rounded-full bg-[#d8b4fe]" />
+                        Istirahat (dtk)
+                      </span>
+                    </div>
+                  </div>
+                </section>
+              )}
             </div>
+            <p className="text-center text-[10px] text-slate-400">Geser ke samping untuk lihat kartu lain.</p>
           </section>
         )}
         {isSheetMounted && activeMovementSession && typeof document !== "undefined" &&
@@ -652,7 +781,7 @@ export default function ReportsPage() {
               <div
                 role="dialog"
                 aria-modal="true"
-                className="relative z-10 flex w-full flex-col rounded-t-[32px] bg-white px-6 pb-8 pt-4 shadow-[0_-20px_60px_rgba(15,23,42,0.25)] transition-transform duration-300"
+                className="relative z-10 flex w-full flex-col rounded-t-md bg-white px-6 pb-8 pt-4 shadow-[0_-20px_60px_rgba(15,23,42,0.25)] transition-transform duration-300"
                 style={{
                   transform: `translateY(calc(${isSheetVisible ? "0%" : "100%"} + ${sheetDragOffset}px))`,
                 }}
@@ -676,7 +805,7 @@ export default function ReportsPage() {
                     return (
                       <div
                         key={set.id}
-                        className="flex items-center justify-between rounded-[24px] border border-white/60 px-5 py-4 shadow-[0_8px_18px_rgba(15,23,42,0.08)]"
+                        className="flex items-center justify-between rounded-md border border-white/60 px-5 py-4 shadow-[0_8px_18px_rgba(15,23,42,0.08)]"
                         style={{ backgroundColor: cardColor }}
                       >
                         <div>
@@ -696,7 +825,7 @@ export default function ReportsPage() {
                 <button
                   type="button"
                   onClick={closeMovementSessionSheet}
-                  className="mt-2 flex w-full items-center justify-center rounded-full bg-white px-5 py-3 text-sm font-semibold text-slate-900 shadow-[0_6px_19px_rgba(15,23,42,0.12)] focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-200"
+                  className="mt-2 flex w-full items-center justify-center rounded-md bg-white px-5 py-3 text-sm font-semibold text-slate-900 shadow-[0_6px_19px_rgba(15,23,42,0.12)] focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-200"
                 >
                   Tutup
                 </button>
