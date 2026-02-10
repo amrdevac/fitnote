@@ -14,6 +14,7 @@ import {
 import { Button } from "@/ui/button";
 import { useTabataPlayerStore } from "@/store/tabataPlayer";
 import { useTimerSettings } from "@/store/timerSettings";
+import ConfirmModal from "@/components/shared/ConfirmModal";
 
 const formatSeconds = (totalSeconds: number) => {
   const minutes = Math.floor(totalSeconds / 60);
@@ -40,6 +41,7 @@ const TabataPlayerBar = () => {
   const wakeLockEnabled = useTimerSettings((state) => state.wakeLockEnabled);
   const [isClosing, setIsClosing] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
+  const [confirmAction, setConfirmAction] = useState<"reset" | "stop" | null>(null);
   const dragStartY = useRef<number | null>(null);
   const previousPaddingRef = useRef<string | null>(null);
   const lastAnnouncedRef = useRef<{ stepId: string | null; second: number | null }>({
@@ -366,20 +368,20 @@ const TabataPlayerBar = () => {
               <Button type="button" size="icon" variant="ghost" onClick={next} aria-label="Berikutnya">
                 <SkipForwardIcon className="size-4" />
               </Button>
-              <Button type="button" size="icon" variant="ghost" onClick={reset} aria-label="Reset">
+              <Button
+                type="button"
+                size="icon"
+                variant="ghost"
+                onClick={() => setConfirmAction("reset")}
+                aria-label="Reset"
+              >
                 <RotateCcwIcon className="size-4" />
               </Button>
               <Button
                 type="button"
                 size="icon"
                 variant="ghost"
-                onClick={() => {
-                  setIsClosing(true);
-                  window.setTimeout(() => {
-                    stop();
-                    setIsClosing(false);
-                  }, 260);
-                }}
+                onClick={() => setConfirmAction("stop")}
                 aria-label="Stop"
               >
                 <SquareIcon className="size-4" />
@@ -453,6 +455,36 @@ const TabataPlayerBar = () => {
           </div>
         </div>
       </div>
+      <ConfirmModal
+        isOpen={confirmAction === "reset"}
+        title="Reset timer?"
+        message="Timer akan diulang dari awal."
+        confirmText="Reset"
+        cancelText="Batal"
+        variant="overlay"
+        onCancel={() => setConfirmAction(null)}
+        onConfirm={() => {
+          reset();
+          setConfirmAction(null);
+        }}
+      />
+      <ConfirmModal
+        isOpen={confirmAction === "stop"}
+        title="Hentikan timer?"
+        message="Timer akan dihentikan dan keluar dari player."
+        confirmText="Stop"
+        cancelText="Batal"
+        variant="overlay"
+        onCancel={() => setConfirmAction(null)}
+        onConfirm={() => {
+          setConfirmAction(null);
+          setIsClosing(true);
+          window.setTimeout(() => {
+            stop();
+            setIsClosing(false);
+          }, 260);
+        }}
+      />
     </>
   );
 };

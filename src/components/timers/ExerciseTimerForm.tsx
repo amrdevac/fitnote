@@ -668,7 +668,7 @@ const ExerciseTimerForm = ({ onClose, embedded = false }: ExerciseTimerFormProps
               </div>
             </div>
 
-            <div className="rounded-xl bg-slate-100 px-4 py-3 text-sm text-slate-600 mb-96">
+            <div className="rounded-xl bg-slate-100 px-4 py-3 text-sm text-slate-600 mb-22">
               <div className="flex items-center gap-2">
                 <HourglassIcon className="size-4" />
                 <span>

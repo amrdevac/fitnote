@@ -63,10 +63,10 @@ export default function BottomNav() {
               aria-current={active ? "page" : undefined}
               className={cn(
                 "flex w-14 flex-col items-center gap-0.5 text-[11px] font-medium transition",
-                active ? "text-slate-900" : "text-slate-400 hover:text-slate-700"
+                active ? "text-indigo-600" : "text-slate-400 hover:text-slate-700"
               )}
             >
-              <Icon className={cn("h-5 w-5", active && "text-slate-900")} aria-hidden />
+              <Icon className={cn("h-5 w-5", active && "text-indigo-600")} aria-hidden />
               <span>{item.label}</span>
             </Link>
           );

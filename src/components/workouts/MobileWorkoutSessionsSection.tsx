@@ -30,6 +30,7 @@ const accentPalette = ["#fb7185", "#38bdf8", "#a78bfa", "#34d399"];
 
 type MobileWorkoutSessionsSectionProps = {
   onOpenArchive: () => void;
+  onOpenReport: () => void;
   onExportBackup: () => void;
   onImportClick: () => void;
   onImportFile: (event: ReactChangeEvent<HTMLInputElement>) => void;
@@ -42,6 +43,7 @@ type MobileWorkoutSessionsSectionProps = {
 
 const MobileWorkoutSessionsSection = ({
   onOpenArchive,
+  onOpenReport,
   onExportBackup,
   onImportClick,
   onImportFile,
@@ -155,6 +157,17 @@ const MobileWorkoutSessionsSection = ({
                 >
                   <CalendarDays className="size-4" />
                   Arsip
+                </button>
+                <button
+                  type="button"
+                  className="flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left text-slate-700 hover:bg-slate-50"
+                  onClick={() => {
+                    setMenuOpen(false);
+                    onOpenReport();
+                  }}
+                >
+                  <LayersIcon className="size-4" />
+                  Laporan
                 </button>
                 <button
                   type="button"

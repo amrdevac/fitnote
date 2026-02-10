@@ -233,6 +233,14 @@ const useWorkoutSession = () => {
     setStagedMovements((prev) => prev.filter((movement) => movement.id !== id));
   }
 
+  function renameStagedMovement(id: string, nextName: string) {
+    setStagedMovements((prev) =>
+      prev.map((movement) =>
+        movement.id === id ? { ...movement, name: nextName } : movement
+      )
+    );
+  }
+
   async function saveSession(): Promise<ActionResult<WorkoutSession>> {
     if (!stagedMovements.length) {
       return { success: false, error: "Tambahkan minimal satu gerakan." };
@@ -296,34 +304,34 @@ const useWorkoutSession = () => {
     }
   }
 
-  async function renameSession(
-    sessionId: string,
-    nextTitle: string
-  ): Promise<ActionResult<WorkoutSession>> {
-    const targetSession = sessions.find((session) => session.id === sessionId);
-    if (!targetSession) {
-      return { success: false, error: "Sesi tidak ditemukan." };
-    }
-    const trimmed = nextTitle.trim();
-    const normalized = trimmed.length ? trimmed : getDefaultSessionTitle(targetSession.createdAt);
-    if (targetSession.title === normalized) {
-      return { success: true };
-    }
-    const updatedSession: WorkoutSession = { ...targetSession, title: normalized };
-    const previousSessions = sessions;
-    setSessions((prev) =>
-      prev.map((session) => (session.id === sessionId ? updatedSession : session))
-    );
-    try {
-      await workoutsDb.saveSession(updatedSession);
-      notifySessionsUpdated();
-      return { success: true, data: updatedSession };
-    } catch (error) {
-      console.error("Failed to rename session", error);
-      setSessions(previousSessions);
-      return { success: false, error: "Gagal menyimpan judul sesi." };
-    }
-  }
+  const renameSession = useCallback(
+    async (sessionId: string, nextTitle: string): Promise<ActionResult<WorkoutSession>> => {
+      const targetSession = sessions.find((session) => session.id === sessionId);
+      if (!targetSession) {
+        return { success: false, error: "Sesi tidak ditemukan." };
+      }
+      const trimmed = nextTitle.trim();
+      const normalized = trimmed.length ? trimmed : getDefaultSessionTitle(targetSession.createdAt);
+      if (targetSession.title === normalized) {
+        return { success: true };
+      }
+      const updatedSession: WorkoutSession = { ...targetSession, title: normalized };
+      const previousSessions = sessions;
+      setSessions((prev) =>
+        prev.map((session) => (session.id === sessionId ? updatedSession : session))
+      );
+      try {
+        await workoutsDb.saveSession(updatedSession);
+        notifySessionsUpdated();
+        return { success: true, data: updatedSession };
+      } catch (error) {
+        console.error("Failed to rename session", error);
+        setSessions(previousSessions);
+        return { success: false, error: "Gagal menyimpan judul sesi." };
+      }
+    },
+    [sessions]
+  );
 
   function resetBuilder() {
     clearCurrentSets();
@@ -373,6 +381,7 @@ const useWorkoutSession = () => {
     clearCurrentSets,
     saveMovement,
     removeMovement,
+    renameStagedMovement,
     saveSession,
     resetBuilder,
     addCustomMovement,

@@ -137,6 +137,16 @@ const ExerciseTimerList = ({ onClose, embedded = false }: ExerciseTimerListProps
   }, []);
 
   useEffect(() => {
+    if (typeof document === "undefined") return;
+    const root = document.documentElement;
+    const previousBehavior = root.style.overscrollBehaviorY;
+    root.style.overscrollBehaviorY = "none";
+    return () => {
+      root.style.overscrollBehaviorY = previousBehavior;
+    };
+  }, []);
+
+  useEffect(() => {
     return () => {
       if (swipeAnimationRef.current) {
         cancelAnimationFrame(swipeAnimationRef.current);

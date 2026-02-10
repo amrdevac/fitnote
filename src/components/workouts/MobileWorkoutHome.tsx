@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import type { CSSProperties, ChangeEvent as ReactChangeEvent } from "react";
 import { useRouter } from "next/navigation";
 import {
@@ -293,7 +294,7 @@ const MobileWorkoutHome = ({ onOpenBuilder }: MobileWorkoutHomeProps) => {
 
   return (
     <div
-      className="select-none relative z-0 mx-auto flex h-dvh w-full max-w-md flex-col bg-slate-50 overflow-y-auto overscroll-none"
+      className="select-none relative z-0 mx-auto flex h-dvh w-full max-w-md flex-col bg-slate-50 overflow-y-auto overscroll-none pb-22"
       style={containerStyle}
     >
       {isSelectionMode && (
@@ -306,6 +307,7 @@ const MobileWorkoutHome = ({ onOpenBuilder }: MobileWorkoutHomeProps) => {
       )}
       <MobileWorkoutSessionsSection
         onOpenArchive={() => router.push("/archive")}
+        onOpenReport={() => router.push("/reports")}
         onExportBackup={handleExportBackup}
         onImportClick={handleImportClick}
         onImportFile={handleImportFile}
@@ -316,100 +318,91 @@ const MobileWorkoutHome = ({ onOpenBuilder }: MobileWorkoutHomeProps) => {
         onOpenMovementSheet={openMovementSheet}
       />
 
-      <div className="pointer-events-none fixed inset-x-0 bottom-0 z-30 flex flex-col items-center gap-6 pb-8 pt-4">
-        <div className="pointer-events-auto absolute right-5 bottom-5">
-          <Button
-            size="icon"
-            className="h-16 w-16 rounded-full bg-indigo-600 text-white shadow-[0_30px_60px_rgba(79,70,229,0.35)]"
-            onClick={openBuilder}
-          >
-            <PlusIcon className="size-6" />
-          </Button>
-        </div>
+      
 
-      </div>
-
-      {isSheetMounted && activeMovement && (
-        <div
-          className={`fixed inset-0 z-50 flex flex-col justify-end bg-slate-900/40 transition-opacity duration-300 ${isSheetVisible ? "opacity-100" : "opacity-0"}`}
-          onClick={closeMovementSheet}
-        >
+      {isSheetMounted && activeMovement && typeof document !== "undefined" &&
+        createPortal(
           <div
-            role="dialog"
-            aria-modal="true"
-            className="relative z-10 flex w-full flex-col rounded-t-[40px] bg-white px-6 pb-10 pt-3 shadow-[0_-20px_60px_rgba(15,23,42,0.25)] transition-all duration-300"
-            style={{
-              transform: `translateY(calc(${isSheetVisible ? "0%" : "100%"} + ${sheetDragOffset}px))`,
-              height: sheetSnap === "full" ? "85vh" : "60vh",
-            }}
-            onClick={(event) => event.stopPropagation()}
+            className={`fixed inset-0 z-[9999] flex flex-col justify-end bg-slate-900/40 transition-opacity duration-300 ${isSheetVisible ? "opacity-100" : "opacity-0"}`}
+            onClick={closeMovementSheet}
           >
             <div
-              className="sticky top-0 z-10  pb-5"
-              onTouchStart={handleSheetTouchStart}
-              onTouchMove={handleSheetTouchMove}
-              onTouchEnd={handleSheetTouchEnd}
+              role="dialog"
+              aria-modal="true"
+              className="relative z-10 flex w-full flex-col rounded-t-[40px] bg-white px-6 pb-10 pt-3 shadow-[0_-20px_60px_rgba(15,23,42,0.25)] transition-all duration-300"
+              style={{
+                transform: `translateY(calc(${isSheetVisible ? "0%" : "100%"} + ${sheetDragOffset}px))`,
+                height: sheetSnap === "full" ? "85vh" : "60vh",
+              }}
+              onClick={(event) => event.stopPropagation()}
             >
-              <div className="mx-auto mb-4 mt-2 h-1.5 w-16 rounded-full bg-slate-200" />
-              <p className=" text-xl font-semibold text-slate-900">
-                {activeMovement.movement.name}
-              </p>
-              <p className="mt-1 text-xs text-slate-500">
-                Ketuk area ini atau tombol bawah untuk menutup.
-              </p>
-            </div>
-            <div className="flex-1 overflow-y-auto p-4 transition-all duration-300">
-              <div className="space-y-4">
-                {activeMovement.movement.sets.map((set, index) => {
-                  const cardColor = setCardColors[index % setCardColors.length];
-                  return (
-                    <div
-                      key={set.id}
-                      className="flex items-center justify-between rounded-[28px] border border-white/60 px-5 py-4 shadow-[0_8px_5px_rgba(15,23,42,0.08)]"
-                      style={{ backgroundColor: cardColor }}
-                    >
-                      <div>
-                        <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">
-                          Set {index + 1}
-                        </p>
-                        <p className="text-xl font-semibold text-slate-900">{set.weight}kg</p>
-                      </div>
-                      <div className="text-right text-sm text-slate-500">
-                        <p className="text-sm font-semibold text-slate-700">{set.reps} reps</p>
-                        <p className="text-[11px] text-slate-400">{set.rest} dtk istirahat</p>
-                      </div>
-                    </div>
-                  );
-                })}
+              <div
+                className="sticky top-0 z-10  pb-5"
+                onTouchStart={handleSheetTouchStart}
+                onTouchMove={handleSheetTouchMove}
+                onTouchEnd={handleSheetTouchEnd}
+              >
+                <div className="mx-auto mb-4 mt-2 h-1.5 w-16 rounded-full bg-slate-200" />
+                <p className=" text-xl font-semibold text-slate-900">
+                  {activeMovement.movement.name}
+                </p>
+                <p className="mt-1 text-xs text-slate-500">
+                  Ketuk area ini atau tombol bawah untuk menutup.
+                </p>
               </div>
-            </div>
-            {sheetLevelUpEligible && (
-              <div className="mt-4 rounded-[28px] bg-gradient-to-r from-indigo-500 via-blue-500 to-sky-400 p-[1px] shadow-[0_20px_40px_rgba(59,130,246,0.3)]">
-                <div className="flex items-center gap-3 rounded-[28px] bg-gradient-to-r from-indigo-500/90 to-sky-400/90 px-4 py-3 text-white">
-                  <div className="rounded-2xl bg-white/15 p-2">
-                    <TrendingUp className="size-4" />
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-[9px] font-semibold uppercase tracking-wide text-white/80">
-                      Level up suggestion
-                    </p>
-                    <p className="text-xs font-semibold">Try adding +2.5kg next session</p>
-                  </div>
+              <div className="flex-1 overflow-y-auto p-4 transition-all duration-300">
+                <div className="space-y-4">
+                  {activeMovement.movement.sets.map((set, index) => {
+                    const cardColor = setCardColors[index % setCardColors.length];
+                    return (
+                      <div
+                        key={set.id}
+                        className="flex items-center justify-between rounded-[28px] border border-white/60 px-5 py-4 shadow-[0_8px_5px_rgba(15,23,42,0.08)]"
+                        style={{ backgroundColor: cardColor }}
+                      >
+                        <div>
+                          <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">
+                            Set {index + 1}
+                          </p>
+                          <p className="text-xl font-semibold text-slate-900">{set.weight}kg</p>
+                        </div>
+                        <div className="text-right text-sm text-slate-500">
+                          <p className="text-sm font-semibold text-slate-700">{set.reps} reps</p>
+                          <p className="text-[11px] text-slate-400">{set.rest} dtk istirahat</p>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
-            )}
-            <div className="mt-3">
-              <button
-                type="button"
-                onClick={closeMovementSheet}
-                className="flex w-full items-center justify-center gap-2 rounded-full bg-white px-5 py-3 text-sm font-semibold text-slate-900 shadow-[0_6px_19px_rgba(15,23,42,0.12)] focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-200"
-              >
-                Tutup
-              </button>
+              {sheetLevelUpEligible && (
+                <div className="mt-4 rounded-[28px] bg-gradient-to-r from-indigo-500 via-blue-500 to-sky-400 p-[1px] shadow-[0_20px_40px_rgba(59,130,246,0.3)]">
+                  <div className="flex items-center gap-3 rounded-[28px] bg-gradient-to-r from-indigo-500/90 to-sky-400/90 px-4 py-3 text-white">
+                    <div className="rounded-2xl bg-white/15 p-2">
+                      <TrendingUp className="size-4" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-[9px] font-semibold uppercase tracking-wide text-white/80">
+                        Level up suggestion
+                      </p>
+                      <p className="text-xs font-semibold">Try adding +2.5kg next session</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+              <div className="mt-3">
+                <button
+                  type="button"
+                  onClick={closeMovementSheet}
+                  className="flex w-full items-center justify-center gap-2 rounded-full bg-white px-5 py-3 text-sm font-semibold text-slate-900 shadow-[0_6px_19px_rgba(15,23,42,0.12)] focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-200"
+                >
+                  Tutup
+                </button>
+              </div>
             </div>
-          </div>
-        </div>
-      )}
+          </div>,
+          document.body
+        )}
     </div>
   );
 }
