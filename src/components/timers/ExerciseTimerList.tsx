@@ -166,7 +166,12 @@ const ExerciseTimerList = ({ onClose, embedded = false }: ExerciseTimerListProps
     }, 250);
   };
 
-  const panelClass = panelState === "active" ? "translate-x-0" : "-translate-x-full";
+  const panelClass =
+    panelState === "active"
+      ? "translate-y-0 opacity-100"
+      : panelState === "exit"
+        ? "translate-y-6 opacity-0"
+        : "translate-y-6 opacity-0";
 
   const timersSummary = useMemo(() => {
     return timerStore.timers.map((timer) => {
@@ -207,7 +212,7 @@ const ExerciseTimerList = ({ onClose, embedded = false }: ExerciseTimerListProps
       onTouchEnd={embedded ? handleTouchEnd : undefined}
     >
       <div
-        className={`flex h-full w-full flex-col overflow-y-auto transition-transform duration-300 ${panelClass}`}
+        className={`flex h-full w-full flex-col overflow-y-auto transition-all duration-200 ease-out ${panelClass}`}
       >
         <div
           ref={containerRef}

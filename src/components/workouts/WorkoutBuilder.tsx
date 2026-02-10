@@ -328,10 +328,10 @@ const WorkoutBuilder = ({ onClose, embedded = false }: WorkoutBuilderProps) => {
 
   const panelClasses =
     panelState === "active"
-      ? "translate-x-0"
+      ? "translate-y-0 opacity-100"
       : panelState === "enter"
-        ? "translate-x-full"
-        : "translate-x-full";
+        ? "translate-y-6 opacity-0"
+        : "translate-y-6 opacity-0";
 
   useEffect(() => {
     if (!setMenuOpen) return;
@@ -357,7 +357,7 @@ const WorkoutBuilder = ({ onClose, embedded = false }: WorkoutBuilderProps) => {
       onTouchEnd={embedded ? handleTouchEnd : undefined}
     >
       <div
-        className={`flex h-full w-full flex-col bg-transparent transition-transform duration-300 ${panelClasses}`}
+        className={`flex h-full w-full flex-col bg-transparent transition-all duration-200 ease-out ${panelClasses}`}
       >
         <div ref={panelRef} className="flex-1 overflow-y-auto">
           <div className="px-6 pb-6 pt-8">

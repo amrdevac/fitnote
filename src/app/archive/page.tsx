@@ -5,6 +5,7 @@ import SwipeNavigation from "@/components/SwipeNavigation";
 import { Button } from "@/ui/button";
 import useWorkoutSession from "@/hooks/useWorkoutSession";
 import { getDefaultSessionTitle } from "@/lib/sessionTitle";
+import BottomNav from "@/components/shared/BottomNav";
 
 function formatDate(dateIso: string) {
   const formatter = new Intl.DateTimeFormat("id-ID", {
@@ -95,6 +96,7 @@ const ArchivePage = () => {
           </div>
         )}
       </main>
+      <BottomNav />
     </SwipeNavigation>
   );
 };

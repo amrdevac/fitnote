@@ -6,6 +6,7 @@ import "aos/dist/aos.css";
 
 import { ThemeProvider } from "next-themes";
 import ProgressBarProviders from "@/components/providers/ProgressBar";
+import PageTransition from "@/components/shared/PageTransition";
 import { Toaster } from "@/ui/toaster";
 import QueryProvider from "@/components/providers/QueryProvider";
 import ServiceWorkerProvider from "@/components/providers/ServiceWorkerProvider";
@@ -73,7 +74,7 @@ export default function RootLayout({
         >
           <QueryProvider>
             <ProgressBarProviders>
-              {children}
+              <PageTransition>{children}</PageTransition>
               <TabataPlayerBar />
               <ServiceWorkerProvider />
               <Toaster />
