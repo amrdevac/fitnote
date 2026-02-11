@@ -221,7 +221,7 @@ const WorkoutBuilder = ({ onClose, embedded = false }: WorkoutBuilderProps) => {
   function showError(message?: string) {
     if (!message) return;
     toast({
-      title: "Form belum lengkap",
+      title: "Form is incomplete",
       description: message,
       variant: "error",
     });
@@ -237,7 +237,7 @@ const WorkoutBuilder = ({ onClose, embedded = false }: WorkoutBuilderProps) => {
       showError(result.error);
       return;
     }
-    showSuccess("Set tersimpan sementara.");
+    showSuccess("Set saved temporarily.");
     weightInputRef.current?.focus();
   }
 

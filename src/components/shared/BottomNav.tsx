@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ArchiveIcon, BarChart3Icon, HomeIcon, PlusIcon, TimerIcon } from "lucide-react";
+import { ArchiveIcon, BarChart3Icon, HomeIcon, PlusIcon, Settings2Icon, TimerIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTabataPlayerStore } from "@/store/tabataPlayer";
 
@@ -34,10 +34,10 @@ const navItems = [
     isActive: (pathname: string) => pathname.startsWith("/timers"),
   },
   {
-    href: "/archive",
-    label: "Archive",
-    icon: ArchiveIcon,
-    isActive: (pathname: string) => pathname.startsWith("/archive"),
+    href: "/settings",
+    label: "Settings",
+    icon: Settings2Icon,
+    isActive: (pathname: string) => pathname.startsWith("/settings"),
   },
 ];
 

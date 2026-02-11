@@ -178,13 +178,13 @@ const useWorkoutSession = () => {
     const reps = Number.parseInt(inputs.reps, 10);
     const rest = Number.parseInt(inputs.rest, 10);
     if (!inputs.weight || Number.isNaN(weight) || weight <= 0) {
-      return { success: false, error: "Isi bobot dengan angka valid." };
+      return { success: false, error: "Enter a valid weight." };
     }
     if (!inputs.reps || Number.isNaN(reps) || reps <= 0) {
-      return { success: false, error: "Isi jumlah rep dengan angka valid." };
+      return { success: false, error: "Enter a valid rep count." };
     }
     if (!inputs.rest || Number.isNaN(rest) || rest <= 0) {
-      return { success: false, error: "Isi waktu istirahat dengan angka valid." };
+      return { success: false, error: "Enter a valid rest time." };
     }
     const newSet: WorkoutSet = {
       id: uniqueId(),
@@ -208,15 +208,15 @@ const useWorkoutSession = () => {
 
   function saveMovement(): ActionResult {
     if (!currentMovementId) {
-      return { success: false, error: "Pilih gerakan terlebih dahulu." };
+      return { success: false, error: "Select a movement first." };
     }
     if (!currentSets.length) {
-      return { success: false, error: "Tambahkan minimal satu set." };
+      return { success: false, error: "Add at least one set." };
     }
 
     const movementName =
       movementLibrary.find((movement) => movement.id === currentMovementId)
-        ?.name ?? "Gerakan kustom";
+        ?.name ?? "Custom movement";
 
     const newMovement: WorkoutMovement = {
       id: uniqueId(),
@@ -243,7 +243,7 @@ const useWorkoutSession = () => {
 
   async function saveSession(): Promise<ActionResult<WorkoutSession>> {
     if (!stagedMovements.length) {
-      return { success: false, error: "Tambahkan minimal satu gerakan." };
+      return { success: false, error: "Add at least one movement." };
     }
     const createdAt = new Date().toISOString();
     const newSession: WorkoutSession = {
@@ -265,7 +265,7 @@ const useWorkoutSession = () => {
       return { success: true, data: newSession };
     } catch (error) {
       console.error("Failed to persist sessions", error);
-      return { success: false, error: "Gagal menyimpan ke IndexedDB." };
+      return { success: false, error: "Failed to save to IndexedDB." };
     }
   }
 
@@ -308,7 +308,7 @@ const useWorkoutSession = () => {
     async (sessionId: string, nextTitle: string): Promise<ActionResult<WorkoutSession>> => {
       const targetSession = sessions.find((session) => session.id === sessionId);
       if (!targetSession) {
-        return { success: false, error: "Sesi tidak ditemukan." };
+        return { success: false, error: "Session not found." };
       }
       const trimmed = nextTitle.trim();
       const normalized = trimmed.length ? trimmed : getDefaultSessionTitle(targetSession.createdAt);
@@ -327,7 +327,7 @@ const useWorkoutSession = () => {
       } catch (error) {
         console.error("Failed to rename session", error);
         setSessions(previousSessions);
-        return { success: false, error: "Gagal menyimpan judul sesi." };
+        return { success: false, error: "Failed to save session title." };
       }
     },
     [sessions]
@@ -344,7 +344,7 @@ const useWorkoutSession = () => {
   function addCustomMovement(name: string): ActionResult<MovementOption> {
     const trimmed = name.trim();
     if (!trimmed.length) {
-      return { success: false, error: "Nama gerakan wajib diisi." };
+      return { success: false, error: "Movement name is required." };
     }
     const existing = movementLibrary.find(
       (movement) => movement.name.toLowerCase() === trimmed.toLowerCase()
@@ -355,7 +355,7 @@ const useWorkoutSession = () => {
     const customMovement: MovementOption = {
       id: uniqueId(),
       name: trimmed,
-      description: "Gerakan kustom",
+      description: "Custom movement",
     };
     setMovementLibrary((prev) => {
       const next = [...prev, customMovement];
@@ -365,6 +365,49 @@ const useWorkoutSession = () => {
       return next;
     });
     return { success: true, data: customMovement };
+  }
+
+  function renameMovementOption(id: string, nextName: string): ActionResult<MovementOption> {
+    const trimmed = nextName.trim();
+    if (!trimmed.length) {
+      return { success: false, error: "Movement name is required." };
+    }
+    const existing = movementLibrary.find(
+      (movement) => movement.name.toLowerCase() === trimmed.toLowerCase()
+    );
+    if (existing && existing.id !== id) {
+      return { success: false, error: "Movement name already exists." };
+    }
+    let updated: MovementOption | null = null;
+    setMovementLibrary((prev) => {
+      const next = prev.map((movement) => {
+        if (movement.id !== id) return movement;
+        updated = { ...movement, name: trimmed };
+        return updated;
+      });
+      workoutsDb
+        .replaceMovementLibrary(next)
+        .catch((error) => console.error("Failed to persist movement library", error));
+      return next;
+    });
+    return updated ? { success: true, data: updated } : { success: false, error: "Movement not found." };
+  }
+
+  function deleteMovementOption(id: string): ActionResult {
+    if (movementLibrary.length <= 1) {
+      return { success: false, error: "Keep at least one movement in the library." };
+    }
+    setMovementLibrary((prev) => {
+      const nextLibrary = prev.filter((movement) => movement.id !== id);
+      workoutsDb
+        .replaceMovementLibrary(nextLibrary)
+        .catch((error) => console.error("Failed to persist movement library", error));
+      if (currentMovementId === id && nextLibrary.length) {
+        setCurrentMovementId(nextLibrary[0].id);
+      }
+      return nextLibrary;
+    });
+    return { success: true };
   }
 
   return {
@@ -385,6 +428,8 @@ const useWorkoutSession = () => {
     saveSession,
     resetBuilder,
     addCustomMovement,
+    renameMovementOption,
+    deleteMovementOption,
     isInitialized,
     archiveSessions,
     restoreSessions,

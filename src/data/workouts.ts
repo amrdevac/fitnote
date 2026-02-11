@@ -5,27 +5,27 @@ export const movementOptions: MovementOption[] = [
   {
     id: "lat-pull-down",
     name: "Lat Pull Down",
-    description: "Tarikan vertikal fokus punggung.",
+    description: "Vertical pull targeting the back.",
   },
   {
     id: "seated-row",
     name: "Seated Row",
-    description: "Tarikan horizontal untuk punggung tengah.",
+    description: "Horizontal pull for mid-back strength.",
   },
   {
     id: "bench-press",
     name: "Bench Press",
-    description: "Fokus dada dan tricep.",
+    description: "Chest and triceps focus.",
   },
   {
     id: "shoulder-press",
     name: "Shoulder Press",
-    description: "Dorongan vertikal bahu.",
+    description: "Vertical press for shoulders.",
   },
   {
     id: "squat",
     name: "Back Squat",
-    description: "Compound kaki dan core.",
+    description: "Compound lift for legs and core.",
   },
 ];
 
