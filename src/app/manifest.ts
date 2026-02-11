@@ -42,7 +42,7 @@ export default function manifest(): ManifestWithSplash {
   return {
     name: "FitNote – Mobile Gym Tracker",
     short_name: "FitNote",
-    description: "Catat dan pantau gerakan gym harian langsung dari perangkat mobile.",
+    description: "Log and track your daily gym movements from your mobile device.",
     start_url: startUrl,
     scope,
     display: "standalone",
@@ -106,9 +106,9 @@ export default function manifest(): ManifestWithSplash {
     ],
     shortcuts: [
       {
-        name: "Catat Sesi Baru",
+        name: "Log New Session",
         short_name: "Builder",
-        description: "Buka form pengelolaan aktivitas untuk mencatat set latihan.",
+        description: "Open the builder to log workout sets.",
         url: "/builder",
         icons: [
           {
@@ -119,9 +119,9 @@ export default function manifest(): ManifestWithSplash {
         ],
       },
       {
-        name: "Kelola Timer",
+        name: "Manage Timers",
         short_name: "Timers",
-        description: "Langsung ke halaman pengatur timer latihan.",
+        description: "Jump straight to the workout timer settings.",
         url: "/timers",
         icons: [
           {

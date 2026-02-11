@@ -42,7 +42,7 @@ const parseLocalDate = (value: string, endOfDay = false) => {
 };
 
 const formatDayLabel = (dateIso: string) => {
-  const formatter = new Intl.DateTimeFormat("id-ID", {
+  const formatter = new Intl.DateTimeFormat("en-US", {
     weekday: "short",
     day: "2-digit",
     month: "short",
@@ -51,7 +51,7 @@ const formatDayLabel = (dateIso: string) => {
 };
 
 const formatSessionLabel = (dateIso: string) => {
-  const formatter = new Intl.DateTimeFormat("id-ID", {
+  const formatter = new Intl.DateTimeFormat("en-US", {
     weekday: "short",
     day: "2-digit",
     month: "short",
@@ -535,7 +535,7 @@ export default function ReportsPage() {
               Top Exercises
             </p>
             {podium.length === 0 ? (
-              <p className="mt-6 text-center text-sm text-slate-400">Belum ada data.</p>
+              <p className="mt-6 text-center text-sm text-slate-400">No data yet.</p>
             ) : (
               <div className="mt-6 grid grid-cols-3 items-end gap-3">
                 {[podium[1], podium[0], podium[2]].map((item, index) => {
@@ -591,12 +591,15 @@ export default function ReportsPage() {
           </div>
           <div
             ref={bestLiftScrollerRef}
-            className="no-scrollbar flex snap-x snap-mandatory gap-4 overflow-x-auto pb-2 pr-4 pt-4 report-fade-up report-delay-2"
+            className="no-scrollbar flex snap-x snap-mandatory gap-4 overflow-x-auto pb-2 px-4 pt-4 report-fade-up report-delay-2"
           >
             {bestLiftCards.map((movement, index) => (
               <div
                 key={`${movement.name}-${index}`}
-                className="relative min-w-[80%] snap-start overflow-hidden rounded-md bg-gradient-to-br from-indigo-600 via-indigo-500 to-indigo-700 px-5 py-4 text-white"
+                className={cn(
+                  "relative min-w-[80%] snap-center overflow-hidden rounded-md bg-gradient-to-br from-indigo-600 via-indigo-500 to-indigo-700 px-5 py-4 text-white transition-transform duration-300",
+                  bestLiftIndex === index ? "scale-[1.06] z-10" : "scale-[0.98]"
+                )}
               >
                 <span className="pointer-events-none absolute -left-10 -top-10 h-32 w-32 rounded-full bg-slate-950/20 blur-2xl" />
                 <span className="pointer-events-none absolute -right-6 top-2 h-20 w-20 rounded-full bg-white/10" />
@@ -623,7 +626,7 @@ export default function ReportsPage() {
             ))}
             {bestLiftCards.length === 0 && (
               <div className="min-w-[80%] snap-start rounded-md bg-slate-100 px-5 py-6 text-sm text-slate-400">
-                Belum ada data.
+                No data yet.
               </div>
             )}
           </div>
@@ -661,10 +664,10 @@ export default function ReportsPage() {
                   }
                 >
                   <option value="today">Hari ini</option>
-                  <option value="7d">7 hari</option>
-                  <option value="20d">20 hari</option>
-                  <option value="1m">1 bulan</option>
-                  <option value="3m">3 bulan</option>
+                  <option value="7d">7 days</option>
+                  <option value="20d">20 days</option>
+                  <option value="1m">1 month</option>
+                  <option value="3m">3 months</option>
                   <option value="custom">Rentang tanggal</option>
                 </select>
               </div>
@@ -724,7 +727,7 @@ export default function ReportsPage() {
               </div>
               <input
                 className="w-full bg-transparent text-sm font-semibold text-slate-700 focus:outline-none"
-                placeholder="Mulai ketik gerakan..."
+                placeholder="Start typing a movement..."
                 value={movementFilter || activeMovementName || ""}
                 onChange={(event) => {
                   setMovementFilter(event.target.value);
@@ -783,13 +786,13 @@ export default function ReportsPage() {
                 </p>
                 {activeMovementSummary.totalSessions === 0 ? (
                   <p className="mt-3 text-sm text-slate-400">
-                    Belum ada data untuk gerakan ini di rentang tanggal.
+                    No data for this movement in the selected date range.
                   </p>
                 ) : (
                   <div className="mt-4 space-y-4">
                     <div className="flex flex-wrap gap-2 text-xs text-slate-500">
                       <span className="rounded-md bg-indigo-500 text-white px-3 py-1">
-                        {activeMovementSummary.totalSessions} sesi
+                        {activeMovementSummary.totalSessions} sessions
                       </span>
                       <span className="rounded-md bg-indigo-500 text-white px-3 py-1">
                         {activeMovementSummary.totalSets} set
@@ -811,7 +814,7 @@ export default function ReportsPage() {
                     </div>
                     <div>
                       <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
-                        Hari latihan
+                        Workout days
                       </p>
                       <div className="mt-3 max-h-44  w-full space-y-3 overflow-y-auto ">
                         {activeMovementSummary.sessions.map((session) => (
@@ -880,7 +883,7 @@ export default function ReportsPage() {
                         : "border-slate-200 bg-white text-slate-400"
                         }`}
                     >
-                      Istirahat
+                      Rest
                     </button>
                   </div>
                   <div className="px-0">
@@ -911,7 +914,7 @@ export default function ReportsPage() {
                             formatter={(value, name) => {
                               if (name === "weight") return [`${value} kg`, "Beban"];
                               if (name === "reps") return [`${value} reps`, "Reps"];
-                              return [`${value} dtk`, "Ist"];
+                              return [`${value} sec`, "Rest"];
                             }}
                             labelFormatter={(label) => `Set ${label}`}
                             separator=" "
@@ -968,14 +971,14 @@ export default function ReportsPage() {
                       </span>
                       <span className={`flex items-center gap-2 ${visibleLines.rest ? "" : "opacity-40"}`}>
                         <span className="h-2 w-2 rounded-full bg-[#d8b4fe]" />
-                        Istirahat (dtk)
+                        Rest (sec)
                       </span>
                     </div>
                   </div>
                 </section>
               )}
             </div>
-            <p className="text-center text-[10px] text-slate-400">Geser ke samping untuk lihat kartu lain.</p>
+            <p className="text-center text-[10px] text-slate-400">Swipe sideways to view other cards.</p>
           </section>
         )}
         {isSheetMounted && activeMovementSession && typeof document !== "undefined" &&
@@ -1022,7 +1025,7 @@ export default function ReportsPage() {
                         </div>
                         <div className="text-right text-sm text-slate-500">
                           <p className="text-sm font-semibold text-slate-700">{set.reps} reps</p>
-                          <p className="text-[11px] text-slate-400">{set.rest} dtk istirahat</p>
+                          <p className="text-[11px] text-slate-400">{set.rest} sec rest</p>
                         </div>
                       </div>
                     );

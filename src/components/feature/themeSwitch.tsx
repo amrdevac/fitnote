@@ -17,8 +17,8 @@ const ThemeSwitcher: React.FC<ThemeSwitcherProps> = ({
 
   useEffect(() => {
     const html = document.documentElement;
-    html.classList.remove(...themes); // hapus semua tema lama
-    html.classList.add(theme); // pasang tema baru
+    html.classList.remove(...themes); // remove all previous themes
+    html.classList.add(theme); // apply the new theme
   }, [theme]);
 
   const handleChangeTheme = (newTheme: string) => {

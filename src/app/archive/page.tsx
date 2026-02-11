@@ -8,7 +8,7 @@ import { getDefaultSessionTitle } from "@/lib/sessionTitle";
 import BottomNav from "@/components/shared/BottomNav";
 
 function formatDate(dateIso: string) {
-  const formatter = new Intl.DateTimeFormat("id-ID", {
+  const formatter = new Intl.DateTimeFormat("en-US", {
     weekday: "short",
     hour: "2-digit",
     minute: "2-digit",
@@ -38,14 +38,14 @@ const ArchivePage = () => {
           </p>
           <h1 className="mt-1 text-4xl font-semibold text-slate-900">Archive Activity</h1>
           <p className="mt-2 text-sm text-slate-500">
-            {archivedSessions.length} sesi · {totalMovements} gerakan
+            {archivedSessions.length} sessions · {totalMovements} movements
           </p>
         </header>
 
         <div className="flex flex-1 flex-col gap-4 overflow-y-auto">
           {archivedSessions.length === 0 && (
             <div className="rounded-2xl border border-dashed border-slate-300 bg-white/80 px-5 py-10 text-center text-sm text-slate-500">
-              Belum ada sesi diarsipkan.
+              No archived sessions yet.
             </div>
           )}
           {archivedSessions
@@ -67,7 +67,7 @@ const ArchivePage = () => {
                     <p className="text-xs uppercase tracking-wide text-slate-400">{sessionLabel}</p>
                     <p className="text-lg font-semibold text-slate-900">{sessionTitle}</p>
                     <p className="text-sm text-slate-500">
-                      {session.movements.length} gerakan · {totalSets} set
+                      {session.movements.length} movements · {totalSets} sets
                     </p>
                   </div>
                   <Button
@@ -75,7 +75,7 @@ const ArchivePage = () => {
                     className="self-start"
                     onClick={() => workoutSession.restoreSessions([session.id])}
                   >
-                    Kembalikan
+                    Restore
                   </Button>
                 </div>
               );
@@ -91,7 +91,7 @@ const ArchivePage = () => {
                 workoutSession.restoreSessions(archivedSessions.map((session) => session.id))
               }
             >
-              Kembalikan semua sesi
+              Restore all sessions
             </Button>
           </div>
         )}

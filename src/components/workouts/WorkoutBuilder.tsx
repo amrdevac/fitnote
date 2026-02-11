@@ -247,7 +247,7 @@ const WorkoutBuilder = ({ onClose, embedded = false }: WorkoutBuilderProps) => {
       showError(result.error);
       return;
     }
-    showSuccess("Gerakan ditambahkan ke sesi.");
+    showSuccess("Movement added to session.");
   }
 
   async function handleSaveSession() {
@@ -256,7 +256,7 @@ const WorkoutBuilder = ({ onClose, embedded = false }: WorkoutBuilderProps) => {
       showError(result.error);
       return;
     }
-    showSuccess("Sesi latihan tersimpan.");
+    showSuccess("Workout session saved.");
     closePanel();
   }
 
@@ -275,7 +275,7 @@ const WorkoutBuilder = ({ onClose, embedded = false }: WorkoutBuilderProps) => {
       return;
     }
     handleSelectMovement(result.data.id);
-    showSuccess("Gerakan baru ditambahkan.");
+    showSuccess("New movement added.");
   }
 
   function handleAutoAdvance(field: "weight" | "reps" | "rest", value: string) {
@@ -362,7 +362,7 @@ const WorkoutBuilder = ({ onClose, embedded = false }: WorkoutBuilderProps) => {
         <div ref={panelRef} className="flex-1 overflow-y-auto">
           <div className="px-6 pb-6 pt-8">
             <PageHeader
-              title="Pengelolaan Aktivitas"
+              title="New Workout"
               onSettings={() => setSettingsOpen(true)}
             />
             <SettingsSheet
@@ -373,13 +373,13 @@ const WorkoutBuilder = ({ onClose, embedded = false }: WorkoutBuilderProps) => {
               <div className="space-y-2">
                 <label className="flex items-center justify-between rounded-xl border border-slate-200 px-4 py-3">
                   <span className="text-sm font-medium text-slate-800">
-                    Tampilkan tombol tambah set
+                    Show add-set button
                   </span>
                   <Toggle checked={showAddButton} onChange={setShowAddButton} />
                 </label>
                 <label className="flex items-center justify-between rounded-xl border border-slate-200 px-4 py-3">
                   <span className="text-sm font-medium text-slate-800">
-                    Fokus otomatis ke input gerakan
+                    Auto-focus movement input
                   </span>
                   <Toggle checked={focusInputOnOpen} onChange={setFocusInputOnOpen} />
                 </label>
@@ -393,7 +393,7 @@ const WorkoutBuilder = ({ onClose, embedded = false }: WorkoutBuilderProps) => {
                 <div className="flex items-center gap-3">
                   <Input
                     ref={movementInputRef}
-                    placeholder="Mulai ketik gerakan favoritmu..."
+                    placeholder="Start typing your favorite movement..."
                     value={movementQuery || selectedMovementName || ""}
                     onChange={(event) => {
                       const value = event.target.value;
@@ -433,7 +433,7 @@ const WorkoutBuilder = ({ onClose, embedded = false }: WorkoutBuilderProps) => {
                       </button>
                     )}
                     {filteredMovements.length === 0 && (
-                      <p className="px-3 py-4 text-center text-xs text-slate-400">Gerakan tidak ditemukan.</p>
+                      <p className="px-3 py-4 text-center text-xs text-slate-400">Movement not found.</p>
                     )}
                     {filteredMovements.map((movement) => (
                       <button
@@ -449,7 +449,7 @@ const WorkoutBuilder = ({ onClose, embedded = false }: WorkoutBuilderProps) => {
                   </div>
                 )}
                 {!movementQuery && (
-                  <p className="text-[9px] text-slate-400">Mulai ketik untuk mencari gerakan favorit kamu.</p>
+                  <p className="text-[9px] text-slate-400">Start typing to search your favorite movement.</p>
                 )}
               </div>
             </div>
@@ -524,7 +524,7 @@ const WorkoutBuilder = ({ onClose, embedded = false }: WorkoutBuilderProps) => {
                 <div>
                   <p className="text-sm font-semibold text-slate-900">Set yang siap disimpan</p>
                   <p className="text-[9px] text-slate-400">
-                    Atur ulang set sebelum simpan. Total data: {workoutSession.currentSets.length} set.
+                    Review sets before saving. Total: {workoutSession.currentSets.length} sets.
                   </p>
                 </div>
                 <div className="relative" ref={setMenuRef}>
@@ -545,7 +545,7 @@ const WorkoutBuilder = ({ onClose, embedded = false }: WorkoutBuilderProps) => {
                           handleSaveMovement();
                         }}
                       >
-                        Simpan gerakan
+                        Save movement
                       </button>
                     </div>
                   )}
@@ -561,21 +561,21 @@ const WorkoutBuilder = ({ onClose, embedded = false }: WorkoutBuilderProps) => {
                       style={{ backgroundColor: color }}
                     >
                       <span className="text-slate-800">
-                        {set.weight}kg · {set.reps} reps · {set.rest} detik
+                        {set.weight}kg · {set.reps} reps · {set.rest} sec
                       </span>
                       <button
                         type="button"
                         className="text-[9px] font-semibold uppercase tracking-wide text-slate-500"
                         onClick={() => workoutSession.removeSet(set.id)}
                       >
-                        Hapus
+                        Delete
                       </button>
                     </div>
                   );
                 })}
                 {workoutSession.currentSets.length === 0 && (
                   <p className="rounded-md bg-slate-50 px-4 py-3 text-xs text-slate-400">
-                    Belum ada set yang siap.
+                    No sets yet.
                   </p>
                 )}
               </div>
@@ -585,8 +585,8 @@ const WorkoutBuilder = ({ onClose, embedded = false }: WorkoutBuilderProps) => {
               <div className="space-y-4 rounded-md  p-5 shadow-[0_25px_50px_rgba(15,23,42,0.08)] bg-white">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-semibold text-slate-900">Gerakan di sesi ini</p>
-                    <p className="text-[9px] text-slate-400">Review progres sebelum simpan.</p>
+                    <p className="text-sm font-semibold text-slate-900">Movements in this session</p>
+                    <p className="text-[9px] text-slate-400">Review progress before saving.</p>
                   </div>
                 </div>
                 <div className="space-y-4">
@@ -696,7 +696,7 @@ const WorkoutBuilder = ({ onClose, embedded = false }: WorkoutBuilderProps) => {
                             className="text-[9px] font-semibold uppercase tracking-wide text-slate-400"
                             onClick={() => setConfirmDeleteMovementId(movement.id)}
                           >
-                            Hapus
+                            Delete
                           </button>
                         </div>
                         <div className="grid grid-cols-2 gap-3  text-xs font-semibold text-slate-500">
@@ -724,7 +724,7 @@ const WorkoutBuilder = ({ onClose, embedded = false }: WorkoutBuilderProps) => {
                             <p className="text-[11px] uppercase tracking-wide text-slate-400">
                               Total Rest
                             </p>
-                            <p className="text-sm text-slate-900">{totalRest} detik</p>
+                            <p className="text-sm text-slate-900">{totalRest} sec</p>
                           </div>
                         </div>
                         {suggestion && (
@@ -759,13 +759,13 @@ const WorkoutBuilder = ({ onClose, embedded = false }: WorkoutBuilderProps) => {
         onClick={() => setConfirmSaveOpen(true)}
       >
         <SaveIcon className="size-6" />
-        <span className="sr-only">Simpan Sesi</span>
+        <span className="sr-only">Save session</span>
       </Button>
       <ConfirmModal
         isOpen={confirmSaveOpen}
-        title="Simpan sesi latihan?"
-        message="Pastikan data sudah benar. Sesi akan disimpan ke riwayat latihan."
-        confirmText="Simpan"
+        title="Save workout session?"
+        message="Make sure the data is correct. The session will be saved to your workout history."
+        confirmText="Save"
         cancelText="Batal"
         variant="overlay"
         onCancel={() => setConfirmSaveOpen(false)}
@@ -776,9 +776,9 @@ const WorkoutBuilder = ({ onClose, embedded = false }: WorkoutBuilderProps) => {
       />
       <ConfirmModal
         isOpen={confirmDeleteMovementId !== null}
-        title="Hapus gerakan ini?"
-        message="Gerakan dan semua set di dalamnya akan dihapus."
-        confirmText="Hapus"
+        title="Delete this movement?"
+        message="This movement and all its sets will be deleted."
+        confirmText="Delete"
         cancelText="Batal"
         variant="overlay"
         onCancel={() => setConfirmDeleteMovementId(null)}

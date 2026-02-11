@@ -93,7 +93,7 @@ const ConfirmModal: React.FC<ConfirmModalProps> = ({
             </div>
             <button
               onClick={handleClose}
-              aria-label="Tutup konfirmasi"
+              aria-label="Close confirmation"
               className="rounded-full p-1 text-violet-400 hover:bg-violet-100"
               type="button"
             >

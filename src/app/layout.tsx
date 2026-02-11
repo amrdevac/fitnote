@@ -19,7 +19,7 @@ export const metadata: Metadata = {
     default: "FitNote – Mobile Gym Tracker",
     template: "%s | FitNote",
   },
-  description: "Catat sesi latihan harian langsung dari perangkat mobile kamu.",
+  description: "Log your daily workout sessions right from your mobile device.",
   icons: {
     icon: [
       { url: "/icon-192.png", sizes: "192x192", type: "image/png" },
@@ -40,7 +40,7 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     title: "FitNote – Mobile Gym Tracker",
-    description: "Catat sesi latihan harian langsung dari perangkat mobile kamu.",
+    description: "Log your daily workout sessions right from your mobile device.",
     url: siteOrigin,
     images: ["/icon-512.png"],
   },
@@ -64,7 +64,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="id" className="theme-default" suppressHydrationWarning>
+    <html lang="en" className="theme-default" suppressHydrationWarning>
       <body className="antialiased">
         <ThemeProvider
           attribute="class"

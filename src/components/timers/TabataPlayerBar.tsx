@@ -367,7 +367,7 @@ const TabataPlayerBar = () => {
               >
                 {isRunning ? <PauseIcon className="size-4" /> : <PlayIcon className="size-4" />}
               </Button>
-              <Button type="button" size="icon" variant="ghost" onClick={next} aria-label="Berikutnya">
+              <Button type="button" size="icon" variant="ghost" onClick={next} aria-label="Next">
                 <SkipForwardIcon className="size-4" />
               </Button>
               <Button
@@ -395,7 +395,7 @@ const TabataPlayerBar = () => {
                 size="icon"
                 variant="ghost"
                 onClick={() => adjustSeconds(-5)}
-                aria-label="Kurangi 5 detik"
+                aria-label="Decrease 5 seconds"
               >
                 <MinusIcon className="size-4" />
               </Button>
@@ -404,7 +404,7 @@ const TabataPlayerBar = () => {
                 size="icon"
                 variant="ghost"
                 onClick={() => adjustSeconds(5)}
-                aria-label="Tambah 5 detik"
+                aria-label="Add 5 seconds"
               >
                 <PlusIcon className="size-4" />
               </Button>
@@ -424,7 +424,7 @@ const TabataPlayerBar = () => {
                 <p className="text-xs uppercase tracking-wide text-slate-400">Queue</p>
                 <div className="mt-2 grid grid-cols-2 gap-2 text-xs text-slate-600">
                   <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
-                    <p className="text-[10px] uppercase tracking-wide text-slate-400">Gerak</p>
+                    <p className="text-[10px] uppercase tracking-wide text-slate-400">Work</p>
                     <p className="text-sm font-semibold text-slate-900">
                       {stepCounts.currentWork}/{stepCounts.totalWork}
                     </p>
@@ -460,9 +460,9 @@ const TabataPlayerBar = () => {
       <ConfirmModal
         isOpen={confirmAction === "reset"}
         title="Reset timer?"
-        message="Timer akan diulang dari awal."
+        message="The timer will restart from the beginning."
         confirmText="Reset"
-        cancelText="Batal"
+        cancelText="Cancel"
         variant="overlay"
         onCancel={() => setConfirmAction(null)}
         onConfirm={() => {
@@ -472,10 +472,10 @@ const TabataPlayerBar = () => {
       />
       <ConfirmModal
         isOpen={confirmAction === "stop"}
-        title="Hentikan timer?"
-        message="Timer akan dihentikan dan keluar dari player."
+        title="Stop timer?"
+        message="The timer will stop and exit the player."
         confirmText="Stop"
-        cancelText="Batal"
+        cancelText="Cancel"
         variant="overlay"
         onCancel={() => setConfirmAction(null)}
         onConfirm={() => {

@@ -15,6 +15,7 @@ import { exportFitnoteBackup, importFitnoteBackup } from "@/lib/indexedDb/backup
 import { useToast } from "@/ui/use-toast";
 import SelectionModeBar from "@/components/workouts/SelectionModeBar";
 import MobileWorkoutSessionsSection from "@/components/workouts/MobileWorkoutSessionsSection";
+import ConfirmModal from "@/components/shared/ConfirmModal";
 import { useMobileWorkoutHomeStore } from "@/store/mobileWorkoutHome";
 
 type ActiveMovement = {
@@ -48,6 +49,7 @@ const MobileWorkoutHome = ({ onOpenBuilder }: MobileWorkoutHomeProps) => {
   const { toast } = useToast();
   const [isExporting, setIsExporting] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
+  const [isImportConfirmOpen, setIsImportConfirmOpen] = useState(false);
   const setSessions = useMobileWorkoutHomeStore((state) => state.setSessions);
   const setRenameSession = useMobileWorkoutHomeStore((state) => state.setRenameSession);
   const isSelectionMode = useMobileWorkoutHomeStore((state) => state.isSelectionMode);
@@ -126,12 +128,12 @@ const MobileWorkoutHome = ({ onOpenBuilder }: MobileWorkoutHomeProps) => {
       link.click();
       link.remove();
       URL.revokeObjectURL(url);
-      toast({ title: "Backup tersimpan", variant: "success" });
+      toast({ title: "Backup saved", variant: "success" });
     } catch (error) {
       console.error("Failed to export backup", error);
       toast({
-        title: "Gagal export",
-        description: "Coba lagi beberapa saat.",
+        title: "Export failed",
+        description: "Please try again.",
         variant: "error",
       });
     } finally {
@@ -141,11 +143,16 @@ const MobileWorkoutHome = ({ onOpenBuilder }: MobileWorkoutHomeProps) => {
 
   const handleImportClick = () => {
     if (isImporting) return;
-    const confirmed = window.confirm(
-      "Import akan menimpa data lokal kamu. Lanjutkan?"
-    );
-    if (!confirmed) return;
+    setIsImportConfirmOpen(true);
+  };
+
+  const handleConfirmImport = () => {
+    setIsImportConfirmOpen(false);
     fileInputRef.current?.click();
+  };
+
+  const handleCancelImport = () => {
+    setIsImportConfirmOpen(false);
   };
 
   const handleImportFile = async (event: ReactChangeEvent<HTMLInputElement>) => {
@@ -158,15 +165,15 @@ const MobileWorkoutHome = ({ onOpenBuilder }: MobileWorkoutHomeProps) => {
       const payload = JSON.parse(text);
       await importFitnoteBackup(payload);
       window.dispatchEvent(new Event("fitnote:sessions-updated"));
-      toast({ title: "Import berhasil", variant: "success" });
+      toast({ title: "Import successful", variant: "success" });
       setTimeout(() => {
         window.location.reload();
       }, 300);
     } catch (error) {
       console.error("Failed to import backup", error);
       toast({
-        title: "Gagal import",
-        description: "Pastikan file JSON sesuai format backup FitNote.",
+        title: "Import failed",
+        description: "Make sure the JSON file matches the FitNote backup format.",
         variant: "error",
       });
     } finally {
@@ -185,6 +192,7 @@ const MobileWorkoutHome = ({ onOpenBuilder }: MobileWorkoutHomeProps) => {
     workoutSession.renameSession,
     workoutSession.isInitialized,
   ]);
+
   
   const clearSheetTimeout = () => {
     if (sheetAnimationTimeout.current) {
@@ -326,7 +334,17 @@ const MobileWorkoutHome = ({ onOpenBuilder }: MobileWorkoutHomeProps) => {
         onOpenMovementSheet={openMovementSheet}
       />
 
-      
+      <ConfirmModal
+        isOpen={isImportConfirmOpen}
+        title="Confirm import"
+        message="Import will overwrite your local data. Continue?"
+        confirmText="Yes, import"
+        cancelText="Cancel"
+        variant="overlay"
+        onConfirm={handleConfirmImport}
+        onCancel={handleCancelImport}
+        autoFocusConfirm
+      />
 
       {isSheetMounted && activeMovement && typeof document !== "undefined" &&
         createPortal(
@@ -355,7 +373,7 @@ const MobileWorkoutHome = ({ onOpenBuilder }: MobileWorkoutHomeProps) => {
                   {activeMovement.movement.name}
                 </p>
                 <p className="mt-1 text-xs text-slate-500">
-                  Ketuk area ini atau tombol bawah untuk menutup.
+                  Tap here or the button below to close.
                 </p>
               </div>
               <div className="flex-1 overflow-y-auto p-4 transition-all duration-300">
@@ -376,7 +394,7 @@ const MobileWorkoutHome = ({ onOpenBuilder }: MobileWorkoutHomeProps) => {
                         </div>
                         <div className="text-right text-sm text-slate-500">
                           <p className="text-sm font-semibold text-slate-700">{set.reps} reps</p>
-                          <p className="text-[11px] text-slate-400">{set.rest} dtk istirahat</p>
+                          <p className="text-[11px] text-slate-400">{set.rest} sec rest</p>
                         </div>
                       </div>
                     );
@@ -404,7 +422,7 @@ const MobileWorkoutHome = ({ onOpenBuilder }: MobileWorkoutHomeProps) => {
                   onClick={closeMovementSheet}
                   className="flex w-full items-center justify-center gap-2 rounded-full bg-white px-5 py-3 text-sm font-semibold text-slate-900 shadow-[0_6px_19px_rgba(15,23,42,0.12)] focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-200"
                 >
-                  Tutup
+                  Close
                 </button>
               </div>
             </div>

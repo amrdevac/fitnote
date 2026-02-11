@@ -282,7 +282,7 @@ const ExerciseTimerForm = ({ onClose, embedded = false }: ExerciseTimerFormProps
     const durationSeconds = parseTime(editorTime.minutes, editorTime.seconds);
     const lapsValue = Number.parseInt(editorLaps, 10);
     if (Number.isNaN(durationSeconds) || durationSeconds <= 0 || Number.isNaN(lapsValue) || lapsValue <= 0) {
-      showError("Durasi dan lap harus valid.");
+      showError("Duration and laps must be valid.");
       return;
     }
 
@@ -314,7 +314,7 @@ const ExerciseTimerForm = ({ onClose, embedded = false }: ExerciseTimerFormProps
 
   function showError(message: string) {
     toast({
-      title: "Form belum lengkap",
+      title: "Form is incomplete",
       description: message,
       variant: "error",
     });
@@ -328,7 +328,7 @@ const ExerciseTimerForm = ({ onClose, embedded = false }: ExerciseTimerFormProps
     event.preventDefault();
     const trimmedName = timerName.trim();
     if (!trimmedName) {
-      showError("Nama timer wajib diisi.");
+      showError("Timer name is required.");
       return;
     }
     const parsedSegments: NewSegmentInput[] = [];
@@ -336,7 +336,7 @@ const ExerciseTimerForm = ({ onClose, embedded = false }: ExerciseTimerFormProps
       (segment) => segment.useExercise || segment.useRest || segment.useSetRest
     );
     if (activeSegments.length === 0) {
-      showError("Tambahkan minimal satu interval.");
+      showError("Add at least one interval.");
       return;
     }
     for (const segment of activeSegments) {
@@ -358,7 +358,7 @@ const ExerciseTimerForm = ({ onClose, embedded = false }: ExerciseTimerFormProps
         Number.isNaN(laps) ||
         laps <= 0
       ) {
-        showError("Durasi harus mm:ss dan lap harus valid.");
+        showError("Duration must be mm:ss and laps must be valid.");
         return;
       }
       parsedSegments.push({
@@ -391,14 +391,14 @@ const ExerciseTimerForm = ({ onClose, embedded = false }: ExerciseTimerFormProps
       setWorkoutLaps(1);
       setEditingTimerId(null);
       setEditingCreatedAt(null);
-      showSuccess("Timer latihan tersimpan.");
+      showSuccess("Workout timer saved.");
       if (embedded && onClose) {
         onClose();
       } else {
         router.push("/timers");
       }
     } catch {
-      showError("Gagal menyimpan timer. Coba lagi.");
+      showError("Failed to save timer. Please try again.");
     } finally {
       setIsSaving(false);
     }
@@ -632,7 +632,7 @@ const ExerciseTimerForm = ({ onClose, embedded = false }: ExerciseTimerFormProps
                                 size="icon"
                                 className="text-slate-500 hover:text-red-600"
                                 onClick={() => removeSegment(segment.id)}
-                                aria-label="Hapus segmen"
+                                aria-label="Delete segment"
                               >
                                 <Trash2Icon className="size-5" />
                               </Button>
@@ -646,7 +646,7 @@ const ExerciseTimerForm = ({ onClose, embedded = false }: ExerciseTimerFormProps
             </div>
 
             <div className="rounded-xl border border-slate-200 bg-white px-4 py-3">
-              <p className="text-xs uppercase tracking-wide text-slate-400">Global lap</p>
+              <p className="text-xs uppercase tracking-wide text-slate-400">Global laps</p>
               <div className="mt-2 flex flex-wrap items-center justify-center gap-3">
                 <Button
                   type="button"
@@ -672,7 +672,7 @@ const ExerciseTimerForm = ({ onClose, embedded = false }: ExerciseTimerFormProps
               <div className="flex items-center gap-2">
                 <HourglassIcon className="size-4" />
                 <span>
-                  Total lap: <strong>{totalQueues.laps}</strong> • Estimasi durasi:{" "}
+                  Total laps: <strong>{totalQueues.laps}</strong> • Estimated duration:{" "}
                   <strong>{secondsToLabel(totalQueues.duration)}</strong>
                 </span>
               </div>
@@ -707,7 +707,7 @@ const ExerciseTimerForm = ({ onClose, embedded = false }: ExerciseTimerFormProps
           size="icon"
           className="h-14 w-14 rounded-full bg-amber-500 text-white shadow-lg transition-transform duration-300"
           onClick={() => setIsFabOpen((prev) => !prev)}
-          aria-label="Tambah"
+          aria-label="Add"
         >
           {isFabOpen ? <XIcon className="size-6" /> : <PlusIcon className="size-6" />}
         </Button>
@@ -726,7 +726,7 @@ const ExerciseTimerForm = ({ onClose, embedded = false }: ExerciseTimerFormProps
             </div>
             <div className="mt-6 space-y-5 text-center">
               <TimeInput
-                label="Durasi"
+                label="Duration"
                 value={editorTime}
                 onChange={setEditorTime}
                 size="large"
@@ -734,7 +734,7 @@ const ExerciseTimerForm = ({ onClose, embedded = false }: ExerciseTimerFormProps
                 align="center"
               />
               <div>
-                <Label className="text-xs uppercase text-slate-500">Lap</Label>
+                <Label className="text-xs uppercase text-slate-500">Laps</Label>
                 <div className="mt-2 flex items-center justify-center gap-4">
                   <Button
                     type="button"

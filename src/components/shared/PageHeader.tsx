@@ -26,7 +26,7 @@ const PageHeader = ({
       size="icon"
       onClick={onBack}
       className="text-slate-600"
-      aria-label="Kembali"
+      aria-label="Back"
     >
       {backPosition == "left" && <ArrowLeftIcon className="size-5" />}
       {backPosition != "left" && <ArrowRightIcon className="size-5" />}
@@ -42,7 +42,7 @@ const PageHeader = ({
       variant="ghost"
       size="icon"
       onClick={onSettings}
-      aria-label="Pengaturan"
+      aria-label="Settings"
       className=" text-slate-600"
     >
       <MoreVerticalIcon className="size-5" />

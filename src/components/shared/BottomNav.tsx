@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -17,7 +17,7 @@ const navItems = [
   },
   {
     href: "/reports",
-    label: "Laporan",
+    label: "Reports",
     icon: BarChart3Icon,
     isActive: (pathname: string) => pathname.startsWith("/reports"),
   },
@@ -44,10 +44,14 @@ const navItems = [
 export default function BottomNav() {
   const pathname = usePathname();
   const navRef = useRef<HTMLElement | null>(null);
-  const canRender = typeof document !== "undefined";
+  const [mounted, setMounted] = useState(false);
   const isPlayerActive = useTabataPlayerStore(
     (state) => state.queue.length > 0 && state.status !== "idle"
   );
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     if (typeof document === "undefined") return;
@@ -64,7 +68,7 @@ export default function BottomNav() {
     };
   }, []);
 
-  if (!canRender) return null;
+  if (!mounted) return null;
 
   return createPortal(
     <nav

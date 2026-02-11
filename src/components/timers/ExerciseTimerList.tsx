@@ -219,7 +219,7 @@ const ExerciseTimerList = ({ onClose, embedded = false }: ExerciseTimerListProps
           className="mx-auto flex h-full w-full max-w-2xl flex-col px-6 pb-32 pt-0 text-slate-900"
         >
           <PageHeader
-            title="Pengelolaan Timer"
+            title="Timer Management"
             onSettings={() => setSettingsOpen(true)}
             className="mb-3 pb-6 pt-8"
           />
@@ -228,7 +228,7 @@ const ExerciseTimerList = ({ onClose, embedded = false }: ExerciseTimerListProps
             <div className="flex items-center justify-between gap-2 text-slate-600">
               <div className="flex items-center gap-2">
                 <TimerResetIcon className="size-4" />
-                <p className="text-sm font-semibold uppercase tracking-wide text-slate-500">Timer tersimpan</p>
+                <p className="text-sm font-semibold uppercase tracking-wide text-slate-500">Saved timers</p>
               </div>
               <Button
                 type="button"
@@ -237,12 +237,12 @@ const ExerciseTimerList = ({ onClose, embedded = false }: ExerciseTimerListProps
                 onClick={() => router.push("/timers/new")}
               >
                 <PlusIcon className="mr-1 size-4" />
-                Tambah
+                Add
               </Button>
             </div>
             {timerStore.timers.length === 0 && timerStore.isLoaded && (
               <div className="rounded-2xl border border-dashed border-slate-300 bg-white/70 px-4 py-8 text-center text-sm text-slate-500">
-                Belum ada preset timer. Simpan kombinasi exercise + rest untuk siap dijalankan kapan saja.
+                No timer presets yet. Save exercise + rest combos to run anytime.
               </div>
             )}
             <div className="space-y-4">
@@ -266,15 +266,15 @@ const ExerciseTimerList = ({ onClose, embedded = false }: ExerciseTimerListProps
                           onClick={() => {
                             if (playerStatus === "running") {
                               toast({
-                                title: "Timer sedang berjalan",
-                                description: "Pause atau stop dulu sebelum memulai ulang.",
+                                title: "Timer is running",
+                                description: "Pause or stop before restarting.",
                               });
                               return;
                             }
                             loadTimer(timer);
                             playTimer();
                           }}
-                          aria-label="Jalankan timer"
+                          aria-label="Start timer"
                           disabled={playerStatus === "running"}
                         >
                           <PlayIcon className="size-5" />
@@ -287,7 +287,7 @@ const ExerciseTimerList = ({ onClose, embedded = false }: ExerciseTimerListProps
                             event.stopPropagation();
                             setMenuOpenId((prev) => (prev === timer.id ? null : timer.id));
                           }}
-                          aria-label="Aksi"
+                          aria-label="Actions"
                         >
                           <MoreVerticalIcon className="size-5" />
                         </Button>
@@ -316,7 +316,7 @@ const ExerciseTimerList = ({ onClose, embedded = false }: ExerciseTimerListProps
                               }}
                             >
                               <Trash2Icon className="size-4" />
-                              Hapus
+                              Delete
                             </button>
                           </div>
                         )}
@@ -330,20 +330,20 @@ const ExerciseTimerList = ({ onClose, embedded = false }: ExerciseTimerListProps
           <div className="mt-3 rounded-xl bg-slate-100 px-4 py-3 text-sm text-slate-600">
             <div className="flex items-center gap-2">
               <HourglassIcon className="size-4" />
-              <span>Pilih timer untuk mulai latihan.</span>
+              <span>Select a timer to start a workout.</span>
             </div>
           </div>
         </div>
       </div>
 
       <SettingsSheet
-        title="Pengaturan Timer"
+        title="Timer Settings"
         open={settingsOpen}
         onOpenChange={setSettingsOpen}
         preventAutoFocus
       >
         <div className="mt-2">
-          <Label className="text-xs uppercase text-slate-500">Aba-aba global (mm:ss)</Label>
+          <Label className="text-xs uppercase text-slate-500">Global lead-in (mm:ss)</Label>
           <div className="mt-2 flex items-center gap-2">
             <Input
               inputMode="numeric"
@@ -363,7 +363,7 @@ const ExerciseTimerList = ({ onClose, embedded = false }: ExerciseTimerListProps
           </div>
         </div>
         <div className="mt-5">
-          <Label className="text-xs uppercase text-slate-500">Durasi getar (ms)</Label>
+          <Label className="text-xs uppercase text-slate-500">Vibration duration (ms)</Label>
           <div className="mt-2 flex items-center gap-2">
             <Input
               inputMode="numeric"
@@ -378,13 +378,13 @@ const ExerciseTimerList = ({ onClose, embedded = false }: ExerciseTimerListProps
               }
               className="w-24 text-center text-lg font-semibold"
             />
-            <span className="text-xs text-slate-400">0 untuk nonaktif</span>
+            <span className="text-xs text-slate-400">0 to disable</span>
           </div>
         </div>
         <div className="mt-5 flex items-center justify-between rounded-xl border border-slate-200 px-4 py-3">
           <div>
             <p className="text-sm font-medium text-slate-800">Wake lock</p>
-            <p className="text-xs text-slate-400">Agar layar tetap menyala saat timer berjalan.</p>
+            <p className="text-xs text-slate-400">Keep the screen on while the timer runs.</p>
           </div>
           <button
             type="button"
@@ -402,7 +402,7 @@ const ExerciseTimerList = ({ onClose, embedded = false }: ExerciseTimerListProps
         </div>
         <div className="mt-6 flex gap-2">
           <Button variant="outline" className="flex-1" onClick={() => setSettingsOpen(false)}>
-            Batal
+            Cancel
           </Button>
           <Button
             className="flex-1"
@@ -418,7 +418,7 @@ const ExerciseTimerList = ({ onClose, embedded = false }: ExerciseTimerListProps
               setSettingsOpen(false);
             }}
           >
-            Simpan
+            Save
           </Button>
         </div>
       </SettingsSheet>

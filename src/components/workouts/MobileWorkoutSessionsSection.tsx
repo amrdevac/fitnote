@@ -125,7 +125,7 @@ const MobileWorkoutSessionsSection = ({
 
   return (
     <div className="flex grow flex-col">
-      <header className="px-5 pb-6 pt-10">
+      <header className="relative z-30 px-5 pb-6 pt-10">
         <div className="flex items-start justify-between">
           <div className="home-fade-up" style={{ animationDelay: "140ms" }}>
             <p className="text-xs font-semibold uppercase tracking-[0.2em] text-emerald-600">
@@ -133,7 +133,7 @@ const MobileWorkoutSessionsSection = ({
             </p>
             <h1 className="mt-1 text-4xl font-semibold text-slate-900">Activity</h1>
             <p className="mt-2 text-sm text-slate-500">
-              {visibleSessions.length} sesi · {totalMovements} gerakan
+              {visibleSessions.length} sessions · {totalMovements} movements
             </p>
           </div>
           <div className="relative home-fade-up" style={{ animationDelay: "220ms" }} ref={menuRef}>
@@ -157,7 +157,7 @@ const MobileWorkoutSessionsSection = ({
                   }}
                 >
                   <CalendarDays className="size-4" />
-                  Arsip
+                  Archive
                 </button>
                 <button
                   type="button"
@@ -168,7 +168,7 @@ const MobileWorkoutSessionsSection = ({
                   }}
                 >
                   <LayersIcon className="size-4" />
-                  Laporan
+                  Reports
                 </button>
                 <button
                   type="button"
@@ -213,7 +213,7 @@ const MobileWorkoutSessionsSection = ({
       >
         {visibleSessions.length === 0 && (
           <div className="rounded-2xl border border-dashed border-slate-300 bg-white/80 px-5 py-10 text-center text-sm text-slate-500">
-            Catatan masih kosong. Tap tombol tambah untuk memulai.
+            No records yet. Tap the add button to get started.
           </div>
         )}
 
@@ -271,7 +271,7 @@ const MobileWorkoutSessionsSection = ({
                       </div>
                     </div>
                     <div className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-emerald-600">
-                      {session.movements.length} gerakan
+                      {session.movements.length} movements
                     </div>
                   </div>
                   <div>
@@ -302,7 +302,7 @@ const MobileWorkoutSessionsSection = ({
                       </CardTitle>
                     )}
                     <p className="text-xs text-slate-400">
-                      {sessionLabel} · {estimatedDuration} mnt
+                      {sessionLabel} · {estimatedDuration} min
                     </p>
                   </div>
                 </CardHeader>
@@ -440,7 +440,7 @@ const MobileWorkoutSessionsSection = ({
                         toggleSession(session.id);
                       }}
                     >
-                      {isExpanded ? "Tutup ringkasan" : "Lihat detail"}{" "}
+                      {isExpanded ? "Hide summary" : "View details"}{" "}
                       <ChevronDown
                         className={`ml-1 size-4 transition-transform ${isExpanded ? "rotate-180" : "rotate-0"}`}
                       />
