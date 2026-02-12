@@ -9,12 +9,14 @@ export type FitnotePreferences = {
   showAddButton: boolean;
   focusInputOnOpen: boolean;
   focusWeightOnSelect: boolean;
+  completedSetThreshold: number;
 };
 
 export const defaultPreferences: FitnotePreferences = {
   showAddButton: true,
   focusInputOnOpen: true,
   focusWeightOnSelect: false,
+  completedSetThreshold: 5,
 };
 
 const preferencesDb = {

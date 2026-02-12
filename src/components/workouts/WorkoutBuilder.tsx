@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { ChartArea, MoreVerticalIcon, PlusIcon, SaveIcon, Trash2Icon } from "lucide-react";
+import { ChartArea, CheckCheckIcon, MoreVerticalIcon, PlusIcon, SaveIcon, Trash2Icon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/ui/use-toast";
 import { Button } from "@/ui/button";
@@ -163,12 +163,16 @@ const WorkoutBuilder = ({ onClose, embedded = false }: WorkoutBuilderProps) => {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [confirmSaveOpen, setConfirmSaveOpen] = useState(false);
   const [confirmDeleteMovementId, setConfirmDeleteMovementId] = useState<string | null>(null);
+  const [confirmDeleteSetId, setConfirmDeleteSetId] = useState<string | null>(null);
   const [editingMovementId, setEditingMovementId] = useState<string | null>(null);
   const [editingMovementName, setEditingMovementName] = useState<string>("");
   const [showAddButton, setShowAddButton] = useState(defaultPreferences.showAddButton);
   const [focusInputOnOpen, setFocusInputOnOpen] = useState(defaultPreferences.focusInputOnOpen);
   const [focusWeightOnSelect, setFocusWeightOnSelect] = useState(
     defaultPreferences.focusWeightOnSelect
+  );
+  const [completedSetThreshold, setCompletedSetThreshold] = useState(
+    defaultPreferences.completedSetThreshold
   );
   const [preferencesReady, setPreferencesReady] = useState(false);
   const [infoSheetMounted, setInfoSheetMounted] = useState(false);
@@ -182,6 +186,8 @@ const WorkoutBuilder = ({ onClose, embedded = false }: WorkoutBuilderProps) => {
   });
   const infoCardsScrollerRef = useRef<HTMLDivElement | null>(null);
   const [infoActiveCardIndex, setInfoActiveCardIndex] = useState(0);
+  const setCardsScrollerRef = useRef<HTMLDivElement | null>(null);
+  const [setCardsActiveIndex, setSetCardsActiveIndex] = useState(0);
   const preferencesLoadedRef = useRef(false);
 
   useEffect(() => {
@@ -193,6 +199,7 @@ const WorkoutBuilder = ({ onClose, embedded = false }: WorkoutBuilderProps) => {
         setShowAddButton(stored.showAddButton);
         setFocusInputOnOpen(stored.focusInputOnOpen);
         setFocusWeightOnSelect(stored.focusWeightOnSelect);
+        setCompletedSetThreshold(stored.completedSetThreshold);
       } catch (error) {
         console.error("Failed to load FitNote preferences", error);
       } finally {
@@ -219,9 +226,9 @@ const WorkoutBuilder = ({ onClose, embedded = false }: WorkoutBuilderProps) => {
   useEffect(() => {
     if (!preferencesLoadedRef.current) return;
     preferencesDb
-      .save({ showAddButton, focusInputOnOpen, focusWeightOnSelect })
+      .save({ showAddButton, focusInputOnOpen, focusWeightOnSelect, completedSetThreshold })
       .catch((error) => console.error("Failed to save FitNote preferences", error));
-  }, [showAddButton, focusInputOnOpen, focusWeightOnSelect]);
+  }, [showAddButton, focusInputOnOpen, focusWeightOnSelect, completedSetThreshold]);
 
   useEffect(() => {
     if (!preferencesLoadedRef.current || !focusInputOnOpen || panelState !== "active") {
@@ -573,6 +580,29 @@ const WorkoutBuilder = ({ onClose, embedded = false }: WorkoutBuilderProps) => {
     return () => node.removeEventListener("scroll", handleScroll);
   }, [infoSheetMounted, movementHistory?.timelinePoints.length, movementHistory?.lastSession]);
 
+  useEffect(() => {
+    const node = setCardsScrollerRef.current;
+    if (!node) return;
+    const handleScroll = () => {
+      const children = Array.from(node.children) as HTMLElement[];
+      if (!children.length) return;
+      const current = node.scrollLeft;
+      let bestIndex = 0;
+      let bestDistance = Number.POSITIVE_INFINITY;
+      children.forEach((child, index) => {
+        const distance = Math.abs(child.offsetLeft - current);
+        if (distance < bestDistance) {
+          bestDistance = distance;
+          bestIndex = index;
+        }
+      });
+      setSetCardsActiveIndex(bestIndex);
+    };
+    handleScroll();
+    node.addEventListener("scroll", handleScroll, { passive: true });
+    return () => node.removeEventListener("scroll", handleScroll);
+  }, [workoutSession.currentSets.length, workoutSession.stagedMovements.length]);
+
   return (
     <div
       data-swipe-ignore={embedded ? true : undefined}
@@ -613,6 +643,22 @@ const WorkoutBuilder = ({ onClose, embedded = false }: WorkoutBuilderProps) => {
                     Auto-focus weight after select
                   </span>
                   <Toggle checked={focusWeightOnSelect} onChange={setFocusWeightOnSelect} />
+                </label>
+                <label className="flex items-center justify-between rounded-xl border border-slate-200 px-4 py-3">
+                  <span className="text-sm font-medium text-slate-800">
+                    Target set selesai
+                  </span>
+                  <input
+                    type="number"
+                    min={1}
+                    max={99}
+                    value={completedSetThreshold}
+                    onChange={(event) => {
+                      const value = Number.parseInt(event.target.value, 10);
+                      setCompletedSetThreshold(Number.isNaN(value) ? 1 : Math.min(99, Math.max(1, value)));
+                    }}
+                    className="h-9 w-16 rounded-md border border-slate-200 bg-white px-2 text-sm font-semibold text-slate-700 focus:border-emerald-200 focus:ring-2 focus:ring-emerald-100"
+                  />
                 </label>
               </div>
             </SettingsSheet>
@@ -767,207 +813,239 @@ const WorkoutBuilder = ({ onClose, embedded = false }: WorkoutBuilderProps) => {
               )}
             </div>
 
-            <div className="rounded-lg border border-white/40 bg-white/95 h-fit p-4 shadow-[0_20px_40px_rgba(15,23,42,0.08)]">
-              <div className="mb-4 flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-semibold text-slate-900">Set yang siap disimpan</p>
-                  <p className="text-[9px] text-slate-400">
-                    Review sets before saving. Total: {workoutSession.currentSets.length} sets.
-                  </p>
-                </div>
-                <div className="relative" ref={setMenuRef}>
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    className="rounded-full bg-slate-50 text-slate-500"
-                    onClick={() => setSetMenuOpen((prev) => !prev)}
-                  >
-                    <MoreVerticalIcon className="size-5" />
-                  </Button>
-                  {setMenuOpen && (
-                    <div className="absolute right-0 top-11 z-20 w-48 rounded-md border border-slate-100 bg-white p-2 text-sm shadow-xl">
-                      <button
-                        className="w-full rounded-xl px-4 py-2 text-left text-slate-700 hover:bg-slate-50"
-                        onClick={() => {
-                          setSetMenuOpen(false);
-                          handleSaveMovement();
-                        }}
-                      >
-                        Save movement
-                      </button>
-                    </div>
-                  )}
-                </div>
-              </div>
-              <SetCardList
-                sets={workoutSession.currentSets}
-                variant="staged"
-                onDelete={workoutSession.removeSet}
-                emptyLabel="No sets yet."
-                maxHeightClassName="max-h-40"
-              />
-            </div>
-
-            {workoutSession.stagedMovements.length > 0 && (
-              <div className="space-y-4 rounded-md  p-5 shadow-[0_25px_50px_rgba(15,23,42,0.08)] bg-white">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-semibold text-slate-900">Movements in this session</p>
-                    <p className="text-[9px] text-slate-400">Review progress before saving.</p>
-                  </div>
-                </div>
-                <div className="space-y-4">
-                  {workoutSession.stagedMovements
-                    .slice()
-                    .reverse()
-                    .map((movement) => {
-                      const totalReps = movement.sets.reduce((acc, set) => acc + set.reps, 0);
-                      const totalRest = movement.sets.reduce((acc, set) => acc + set.rest, 0);
-                      const consistentWeight = movement.sets.every(
-                        (set) => set.weight === movement.sets[0]?.weight
-                      );
-                      const minWeight = movement.sets.reduce(
-                        (min, set) => Math.min(min, set.weight),
-                        movement.sets[0]?.weight ?? 0
-                      );
-                      const maxWeight = movement.sets.reduce(
-                        (max, set) => Math.max(max, set.weight),
-                        movement.sets[0]?.weight ?? 0
-                      );
-                      const suggestion = movement.sets.length >= 4 && consistentWeight;
-
-                      return (
-                        <div
-                          key={movement.id}
-                          className="rounded-md border border-slate-100  p-4 text-sm text-slate-700 "
+            <div>
+              <div
+                ref={setCardsScrollerRef}
+                className="flex snap-x snap-mandatory items-stretch gap-4 overflow-x-auto pb-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+              >
+                <div className="min-w-full snap-center">
+                  <div className="h-full min-h-[400px] rounded-lg border border-white/40 bg-white/95 p-4 shadow-[0_20px_40px_rgba(15,23,42,0.08)]">
+                    <div className="mb-4 flex items-center justify-between">
+                      <div>
+                        <p className="text-sm font-semibold text-slate-900">Sets</p>
+                        <p className="text-[9px] text-slate-400">
+                          Review sets before saving. Total: {workoutSession.currentSets.length} sets.
+                        </p>
+                      </div>
+                      {workoutSession.currentSets.length >= completedSetThreshold && (
+                        <div className="flex items-center gap-2 text-emerald-600">
+                          <CheckCheckIcon className="size-5" />
+                          <span className="text-[9px] font-semibold uppercase tracking-wide">Done</span>
+                        </div>
+                      )}
+                      <div className="relative" ref={setMenuRef}>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="rounded-full bg-slate-50 text-slate-500"
+                          onClick={() => setSetMenuOpen((prev) => !prev)}
                         >
-                          <div className="mb-3 flex items-center justify-between">
-                            <div>
-                              {editingMovementId === movement.id ? (
-                                <div className="relative">
-                                  <input
-                                    className="h-9 w-full rounded-md border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-900"
-                                    value={editingMovementName}
-                                    onChange={(event) => setEditingMovementName(event.target.value)}
-                                    onFocus={(event) => event.target.select()}
-                                    onKeyDown={(event) => {
-                                      if (event.key === "Enter") {
-                                        event.currentTarget.blur();
-                                      }
-                                      if (event.key === "Escape") {
-                                        setEditingMovementId(null);
-                                      }
-                                    }}
-                                    onBlur={() => {
-                                      if (editingMovementName.trim().length > 0) {
-                                        workoutSession.renameStagedMovement(
-                                          movement.id,
-                                          editingMovementName.trim()
-                                        );
-                                      }
-                                      setEditingMovementId(null);
-                                    }}
-                                    autoFocus
-                                  />
-                                  {editingMovementName.trim().length > 0 && (
-                                    <div className="absolute left-0 right-0 top-10 z-20 max-h-48 overflow-y-auto rounded-lg border border-slate-200 bg-white shadow-lg">
-                                      {workoutSession.movementLibrary
-                                        .filter((option) =>
-                                          option.name.toLowerCase().includes(
-                                            editingMovementName.trim().toLowerCase()
-                                          )
-                                        )
-                                        .slice(0, 8)
-                                        .map((option) => (
-                                          <button
-                                            key={option.id}
-                                            type="button"
-                                            className="flex w-full items-center px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50"
-                                            onMouseDown={(event) => event.preventDefault()}
-                                            onClick={() => {
-                                              setEditingMovementName(option.name);
-                                              workoutSession.renameStagedMovement(movement.id, option.name);
-                                              setEditingMovementId(null);
-                                            }}
-                                          >
-                                            {option.name}
-                                          </button>
-                                        ))}
-                                      {workoutSession.movementLibrary.filter((option) =>
-                                        option.name
-                                          .toLowerCase()
-                                          .includes(editingMovementName.trim().toLowerCase())
-                                      ).length === 0 && (
-                                          <div className="px-3 py-2 text-xs text-slate-400">
-                                            Tidak ada hasil.
-                                          </div>
-                                        )}
-                                    </div>
-                                  )}
-                                </div>
-                              ) : (
-                                <p
-                                  className="text-xl font-semibold text-slate-900"
-                                  onDoubleClick={() => {
-                                    setEditingMovementId(movement.id);
-                                    setEditingMovementName(movement.name);
-                                  }}
-                                >
-                                  {movement.name}
-                                </p>
-                              )}
-
-                            </div>
+                          <MoreVerticalIcon className="size-5" />
+                        </Button>
+                        {setMenuOpen && (
+                          <div className="absolute right-0 top-11 z-20 w-48 rounded-md border border-slate-100 bg-white p-2 text-sm shadow-xl">
                             <button
-                              type="button"
-                              className="text-[9px] font-semibold uppercase tracking-wide text-slate-400"
-                              onClick={() => setConfirmDeleteMovementId(movement.id)}
+                              className="w-full rounded-xl px-4 py-2 text-left text-slate-700 hover:bg-slate-50"
+                              onClick={() => {
+                                setSetMenuOpen(false);
+                                handleSaveMovement();
+                              }}
                             >
-                              Delete
+                              Save movement
                             </button>
                           </div>
-                          <div className="grid grid-cols-2 gap-3  text-xs font-semibold text-slate-500">
-                            <div>
-                              <p className="text-[11px] uppercase tracking-wide text-slate-400">
-                                Total Set
-                              </p>
-                              <p className="text-sm text-slate-900">{movement.sets.length}</p>
-                            </div>
-                            <div>
-                              <p className="text-[11px] uppercase tracking-wide text-slate-400">
-                                Total Reps
-                              </p>
-                              <p className="text-sm text-slate-900">{totalReps}</p>
-                            </div>
-                            <div>
-                              <p className="text-[11px] uppercase tracking-wide text-slate-400">
-                                Rentang Beban
-                              </p>
-                              <p className="text-sm text-slate-900">
-                                {minWeight}kg{consistentWeight ? "" : ` – ${maxWeight}kg`}
-                              </p>
-                            </div>
-                            <div>
-                              <p className="text-[11px] uppercase tracking-wide text-slate-400">
-                                Total Rest
-                              </p>
-                              <p className="text-sm text-slate-900">{totalRest} sec</p>
-                            </div>
-                          </div>
-                          {suggestion && (
-                            <div className="mt-3 inline-flex items-center gap-2   py-2 text-xs font-semibold text-indigo-600 ">
-                              <span className="inline-flex size-6 items-center justify-center rounded-full bg-amber-100 text-amber-600">
-                                ↑
-                              </span>
-                              Level Up: +2.5kg suggestion
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
+                        )}
+                      </div>
+                    </div>
+                    <SetCardList
+                      sets={workoutSession.currentSets}
+                      variant="staged"
+                      onDelete={(setId) => setConfirmDeleteSetId(setId)}
+                      onEditSet={workoutSession.updateCurrentSet}
+                      emptyLabel="No sets yet."
+                      maxHeightClassName="max-h-[400px]"
+                    />
+                  </div>
+                </div>
+
+                <div className="min-w-full snap-center">
+                  <div className=" h-[400px] overflow-auto rounded-md bg-white p-5 shadow-[0_25px_50px_rgba(15,23,42,0.08)]">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm font-semibold text-slate-900">Session moves</p>
+                        <p className="text-[9px] text-slate-400">Review progress before saving.</p>
+                      </div>
+                    </div>
+                    {workoutSession.stagedMovements.length > 0 ? (
+                      <div className="mt-4 space-y-4">
+                        {workoutSession.stagedMovements
+                          .slice()
+                          .reverse()
+                          .map((movement) => {
+                            const totalReps = movement.sets.reduce((acc, set) => acc + set.reps, 0);
+                            const totalRest = movement.sets.reduce((acc, set) => acc + set.rest, 0);
+                            const consistentWeight = movement.sets.every(
+                              (set) => set.weight === movement.sets[0]?.weight
+                            );
+                            const minWeight = movement.sets.reduce(
+                              (min, set) => Math.min(min, set.weight),
+                              movement.sets[0]?.weight ?? 0
+                            );
+                            const maxWeight = movement.sets.reduce(
+                              (max, set) => Math.max(max, set.weight),
+                              movement.sets[0]?.weight ?? 0
+                            );
+                            const suggestion = movement.sets.length >= 4 && consistentWeight;
+
+                            return (
+                              <div
+                                key={movement.id}
+                                className="rounded-md border border-slate-100 p-4 text-sm text-slate-700"
+                              >
+                                <div className="mb-3 flex items-center justify-between">
+                                  <div>
+                                    {editingMovementId === movement.id ? (
+                                      <div className="relative">
+                                        <input
+                                          className="h-9 w-full rounded-md border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-900"
+                                          value={editingMovementName}
+                                          onChange={(event) => setEditingMovementName(event.target.value)}
+                                          onFocus={(event) => event.target.select()}
+                                          onKeyDown={(event) => {
+                                            if (event.key === "Enter") {
+                                              event.currentTarget.blur();
+                                            }
+                                            if (event.key === "Escape") {
+                                              setEditingMovementId(null);
+                                            }
+                                          }}
+                                          onBlur={() => {
+                                            if (editingMovementName.trim().length > 0) {
+                                              workoutSession.renameStagedMovement(
+                                                movement.id,
+                                                editingMovementName.trim()
+                                              );
+                                            }
+                                            setEditingMovementId(null);
+                                          }}
+                                          autoFocus
+                                        />
+                                        {editingMovementName.trim().length > 0 && (
+                                          <div className="absolute left-0 right-0 top-10 z-20 max-h-48 overflow-y-auto rounded-lg border border-slate-200 bg-white shadow-lg">
+                                            {workoutSession.movementLibrary
+                                              .filter((option) =>
+                                                option.name.toLowerCase().includes(
+                                                  editingMovementName.trim().toLowerCase()
+                                                )
+                                              )
+                                              .slice(0, 8)
+                                              .map((option) => (
+                                                <button
+                                                  key={option.id}
+                                                  type="button"
+                                                  className="flex w-full items-center px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50"
+                                                  onMouseDown={(event) => event.preventDefault()}
+                                                  onClick={() => {
+                                                    setEditingMovementName(option.name);
+                                                    workoutSession.renameStagedMovement(movement.id, option.name);
+                                                    setEditingMovementId(null);
+                                                  }}
+                                                >
+                                                  {option.name}
+                                                </button>
+                                              ))}
+                                            {workoutSession.movementLibrary.filter((option) =>
+                                              option.name
+                                                .toLowerCase()
+                                                .includes(editingMovementName.trim().toLowerCase())
+                                            ).length === 0 && (
+                                                <div className="px-3 py-2 text-xs text-slate-400">
+                                                  Tidak ada hasil.
+                                                </div>
+                                              )}
+                                          </div>
+                                        )}
+                                      </div>
+                                    ) : (
+                                      <p
+                                        className="text-xl font-semibold text-slate-900"
+                                        onDoubleClick={() => {
+                                          setEditingMovementId(movement.id);
+                                          setEditingMovementName(movement.name);
+                                        }}
+                                      >
+                                        {movement.name}
+                                      </p>
+                                    )}
+                                  </div>
+                                  <button
+                                    type="button"
+                                    className="text-[9px] font-semibold uppercase tracking-wide text-slate-400"
+                                    onClick={() => setConfirmDeleteMovementId(movement.id)}
+                                  >
+                                    Delete
+                                  </button>
+                                </div>
+                                <div className="grid grid-cols-2 gap-3 text-xs font-semibold text-slate-500">
+                                  <div>
+                                    <p className="text-[11px] uppercase tracking-wide text-slate-400">
+                                      Total Set
+                                    </p>
+                                    <p className="text-sm text-slate-900">{movement.sets.length}</p>
+                                  </div>
+                                  <div>
+                                    <p className="text-[11px] uppercase tracking-wide text-slate-400">
+                                      Total Reps
+                                    </p>
+                                    <p className="text-sm text-slate-900">{totalReps}</p>
+                                  </div>
+                                  <div>
+                                    <p className="text-[11px] uppercase tracking-wide text-slate-400">
+                                      Weight Range
+                                    </p>
+                                    <p className="text-sm text-slate-900">
+                                      {minWeight}kg{consistentWeight ? "" : ` – ${maxWeight}kg`}
+                                    </p>
+                                  </div>
+                                  <div>
+                                    <p className="text-[11px] uppercase tracking-wide text-slate-400">
+                                      Total Rest
+                                    </p>
+                                    <p className="text-sm text-slate-900">{totalRest} sec</p>
+                                  </div>
+                                </div>
+                                {suggestion && (
+                                  <div className="mt-3 inline-flex items-center gap-2 py-2 text-xs font-semibold text-indigo-600">
+                                    <span className="inline-flex size-6 items-center justify-center rounded-full bg-amber-100 text-amber-600">
+                                      ↑
+                                    </span>
+                                    Level Up: +2.5kg suggestion
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })}
+                      </div>
+                    ) : (
+                      <div className="mt-6 rounded-md border border-slate-100 bg-slate-50 px-4 py-3 text-xs text-slate-400">
+                        No movements yet.
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
-            )}
+
+              <div className="mt-3 flex items-center justify-center gap-2">
+                {[0, 1].map((index) => (
+                  <span
+                    key={`sets-dot-${index}`}
+                    className={`h-1.5 w-1.5 rounded-full transition ${
+                      setCardsActiveIndex === index ? "bg-slate-700" : "bg-slate-300"
+                    }`}
+                  />
+                ))}
+              </div>
+            </div>
 
           </div>
           <div className="mt-auto px-6 pb-8">
@@ -1126,6 +1204,21 @@ const WorkoutBuilder = ({ onClose, embedded = false }: WorkoutBuilderProps) => {
             workoutSession.removeMovement(confirmDeleteMovementId);
           }
           setConfirmDeleteMovementId(null);
+        }}
+      />
+      <ConfirmModal
+        isOpen={confirmDeleteSetId !== null}
+        title="Delete this set?"
+        message="This set will be removed from the list."
+        confirmText="Delete"
+        cancelText="Cancel"
+        variant="overlay"
+        onCancel={() => setConfirmDeleteSetId(null)}
+        onConfirm={() => {
+          if (confirmDeleteSetId) {
+            workoutSession.removeSet(confirmDeleteSetId);
+          }
+          setConfirmDeleteSetId(null);
         }}
       />
     </div>

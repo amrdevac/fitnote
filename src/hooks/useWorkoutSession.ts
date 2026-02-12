@@ -201,6 +201,15 @@ const useWorkoutSession = () => {
     setCurrentSets((prev) => prev.filter((set) => set.id !== id));
   }
 
+  function updateCurrentSet(
+    id: string,
+    updates: Partial<Pick<WorkoutSet, "weight" | "reps" | "rest">>
+  ) {
+    setCurrentSets((prev) =>
+      prev.map((set) => (set.id === id ? { ...set, ...updates } : set))
+    );
+  }
+
   function clearCurrentSets() {
     setCurrentSets([]);
     setInputs(initialInputs);
@@ -421,6 +430,7 @@ const useWorkoutSession = () => {
     stagedMovements,
     addSet,
     removeSet,
+    updateCurrentSet,
     clearCurrentSets,
     saveMovement,
     removeMovement,
