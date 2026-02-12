@@ -8,11 +8,13 @@ export type FitnotePreferences = {
   id?: string;
   showAddButton: boolean;
   focusInputOnOpen: boolean;
+  focusWeightOnSelect: boolean;
 };
 
 export const defaultPreferences: FitnotePreferences = {
   showAddButton: true,
   focusInputOnOpen: true,
+  focusWeightOnSelect: false,
 };
 
 const preferencesDb = {

@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { MoreVerticalIcon, PlusIcon, SaveIcon, Trash2Icon } from "lucide-react";
+import { ChartArea, MoreVerticalIcon, PlusIcon, SaveIcon, Trash2Icon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/ui/use-toast";
 import { Button } from "@/ui/button";
@@ -14,6 +14,9 @@ import { useTabataPlayerStore } from "@/store/tabataPlayer";
 import PageHeader from "@/components/shared/PageHeader";
 import SettingsSheet from "@/components/shared/SettingsSheet";
 import ConfirmModal from "@/components/shared/ConfirmModal";
+import SetCardList from "@/components/workouts/SetCardList";
+import type { WorkoutMovement, WorkoutSession } from "@/types/workout";
+import MovementChart from "@/components/charts/MovementChart";
 
 const Toggle = ({
   checked,
@@ -39,11 +42,25 @@ const Toggle = ({
   );
 };
 
-const stagedSetColors = ["#E5EEFF", "#FFEAE3", "#E8FBEF", "#FFF7DA"];
+const formatSessionLabel = (dateIso: string) => {
+  const formatter = new Intl.DateTimeFormat("en-US", {
+    weekday: "short",
+    day: "2-digit",
+    month: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+  return formatter.format(new Date(dateIso));
+};
 
 type WorkoutBuilderProps = {
   onClose?: () => void;
   embedded?: boolean;
+};
+
+type MovementSession = {
+  session: WorkoutSession;
+  movement: WorkoutMovement;
 };
 
 const WorkoutBuilder = ({ onClose, embedded = false }: WorkoutBuilderProps) => {
@@ -150,7 +167,21 @@ const WorkoutBuilder = ({ onClose, embedded = false }: WorkoutBuilderProps) => {
   const [editingMovementName, setEditingMovementName] = useState<string>("");
   const [showAddButton, setShowAddButton] = useState(defaultPreferences.showAddButton);
   const [focusInputOnOpen, setFocusInputOnOpen] = useState(defaultPreferences.focusInputOnOpen);
+  const [focusWeightOnSelect, setFocusWeightOnSelect] = useState(
+    defaultPreferences.focusWeightOnSelect
+  );
   const [preferencesReady, setPreferencesReady] = useState(false);
+  const [infoSheetMounted, setInfoSheetMounted] = useState(false);
+  const [infoSheetVisible, setInfoSheetVisible] = useState(false);
+  const [infoSheetDragOffset, setInfoSheetDragOffset] = useState(0);
+  const [infoSheetDragStart, setInfoSheetDragStart] = useState<number | null>(null);
+  const [visibleInfoLines, setVisibleInfoLines] = useState({
+    weight: true,
+    reps: true,
+    rest: true,
+  });
+  const infoCardsScrollerRef = useRef<HTMLDivElement | null>(null);
+  const [infoActiveCardIndex, setInfoActiveCardIndex] = useState(0);
   const preferencesLoadedRef = useRef(false);
 
   useEffect(() => {
@@ -161,6 +192,7 @@ const WorkoutBuilder = ({ onClose, embedded = false }: WorkoutBuilderProps) => {
         if (cancelled) return;
         setShowAddButton(stored.showAddButton);
         setFocusInputOnOpen(stored.focusInputOnOpen);
+        setFocusWeightOnSelect(stored.focusWeightOnSelect);
       } catch (error) {
         console.error("Failed to load FitNote preferences", error);
       } finally {
@@ -187,9 +219,9 @@ const WorkoutBuilder = ({ onClose, embedded = false }: WorkoutBuilderProps) => {
   useEffect(() => {
     if (!preferencesLoadedRef.current) return;
     preferencesDb
-      .save({ showAddButton, focusInputOnOpen })
+      .save({ showAddButton, focusInputOnOpen, focusWeightOnSelect })
       .catch((error) => console.error("Failed to save FitNote preferences", error));
-  }, [showAddButton, focusInputOnOpen]);
+  }, [showAddButton, focusInputOnOpen, focusWeightOnSelect]);
 
   useEffect(() => {
     if (!preferencesLoadedRef.current || !focusInputOnOpen || panelState !== "active") {
@@ -222,6 +254,98 @@ const WorkoutBuilder = ({ onClose, embedded = false }: WorkoutBuilderProps) => {
       (movement) => movement.name.toLowerCase() === trimmedMovementQuery.toLowerCase()
     );
   }, [trimmedMovementQuery, workoutSession.movementLibrary]);
+
+  const activeMovementOption = useMemo(
+    () =>
+      workoutSession.movementLibrary.find(
+        (movement) => movement.id === workoutSession.currentMovementId
+      ) ?? null,
+    [workoutSession.currentMovementId, workoutSession.movementLibrary]
+  );
+
+  const movementHistory = useMemo(() => {
+    if (!activeMovementOption) return null;
+    const normalizedName = activeMovementOption.name.toLowerCase();
+    const movementSessions = workoutSession.sessions
+      .filter((session) => !session.archivedAt)
+      .map((session) => {
+        const movement = session.movements.find(
+          (item) => item.name.toLowerCase() === normalizedName
+        );
+        return movement ? { session, movement } : null;
+      })
+      .filter((entry): entry is MovementSession => Boolean(entry))
+      .sort((a, b) => (a.session.createdAt < b.session.createdAt ? 1 : -1));
+
+    if (!movementSessions.length) {
+      return {
+        sessions: [],
+        totalSessions: 0,
+        totalSets: 0,
+        bestWeight: 0,
+        bestReps: 0,
+        lastSession: null as null | MovementSession,
+        timelinePoints: [] as {
+          index: number;
+          weight: number;
+          reps: number;
+          rest: number;
+          setIndex: number;
+        }[],
+      };
+    }
+
+    let totalSets = 0;
+    let bestWeight = 0;
+    let bestReps = 0;
+    movementSessions.forEach(({ movement }) => {
+      movement.sets.forEach((set) => {
+        totalSets += 1;
+        if (set.weight > bestWeight) {
+          bestWeight = set.weight;
+          bestReps = set.reps;
+        } else if (set.weight === bestWeight) {
+          bestReps = Math.max(bestReps, set.reps);
+        }
+      });
+    });
+
+    const timelinePoints: {
+      index: number;
+      weight: number;
+      reps: number;
+      rest: number;
+      setIndex: number;
+    }[] = [];
+    movementSessions
+      .slice()
+      .reverse()
+      .forEach(({ movement }) => {
+        movement.sets.forEach((set, setIndex) => {
+          timelinePoints.push({
+            index: timelinePoints.length + 1,
+            weight: set.weight,
+            reps: set.reps,
+            rest: set.rest,
+            setIndex: setIndex + 1,
+          });
+        });
+      });
+
+    return {
+      sessions: movementSessions,
+      totalSessions: movementSessions.length,
+      totalSets,
+      bestWeight,
+      bestReps,
+      lastSession: movementSessions[0],
+      timelinePoints,
+    };
+  }, [activeMovementOption, workoutSession.sessions]);
+
+  const lastSessionLabel = movementHistory?.lastSession
+    ? formatSessionLabel(movementHistory.lastSession.session.createdAt)
+    : null;
 
   const { toast } = useToast();
 
@@ -272,7 +396,9 @@ const WorkoutBuilder = ({ onClose, embedded = false }: WorkoutBuilderProps) => {
     const selected = workoutSession.movementLibrary.find((movement) => movement.id === optionId);
     setSelectedMovementName(selected?.name ?? "");
     setMovementQuery("");
-    weightInputRef.current?.focus();
+    if (focusWeightOnSelect) {
+      weightInputRef.current?.focus();
+    }
   }
 
   function handleAddCustomMovement() {
@@ -333,6 +459,58 @@ const WorkoutBuilder = ({ onClose, embedded = false }: WorkoutBuilderProps) => {
     }
   }
 
+  const infoSheetAnimationDuration = 260;
+  const infoSheetCloseThreshold = 120;
+
+  const openInfoSheet = () => {
+    if (infoSheetMounted) return;
+    setInfoSheetDragOffset(0);
+    setInfoSheetDragStart(null);
+    setInfoSheetMounted(true);
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => setInfoSheetVisible(true));
+    });
+  };
+
+  const closeInfoSheet = () => {
+    if (!infoSheetMounted) return;
+    setInfoSheetDragOffset(0);
+    setInfoSheetDragStart(null);
+    setInfoSheetVisible(false);
+    setTimeout(() => {
+      setInfoSheetMounted(false);
+    }, infoSheetAnimationDuration);
+  };
+
+  const handleInfoSheetTouchStart = (event: React.TouchEvent<HTMLDivElement>) => {
+    if (!infoSheetVisible) return;
+    const touch = event.touches[0];
+    setInfoSheetDragStart(touch?.clientY ?? null);
+  };
+
+  const handleInfoSheetTouchMove = (event: React.TouchEvent<HTMLDivElement>) => {
+    if (infoSheetDragStart === null || !infoSheetVisible) return;
+    const currentY = event.touches[0]?.clientY ?? 0;
+    const delta = currentY - infoSheetDragStart;
+    if (delta <= 0) return;
+    event.preventDefault();
+    setInfoSheetDragOffset(delta);
+    if (delta > infoSheetCloseThreshold) {
+      setInfoSheetDragStart(null);
+      closeInfoSheet();
+    }
+  };
+
+  const handleInfoSheetTouchEnd = () => {
+    if (!infoSheetVisible) return;
+    if (infoSheetDragOffset > infoSheetCloseThreshold) {
+      closeInfoSheet();
+      return;
+    }
+    setInfoSheetDragOffset(0);
+    setInfoSheetDragStart(null);
+  };
+
   const panelClasses =
     panelState === "active"
       ? "translate-y-0 opacity-100"
@@ -354,6 +532,46 @@ const WorkoutBuilder = ({ onClose, embedded = false }: WorkoutBuilderProps) => {
     document.addEventListener("mousedown", handleClick);
     return () => document.removeEventListener("mousedown", handleClick);
   }, [setMenuOpen]);
+
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    if (!infoSheetMounted) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [infoSheetMounted]);
+
+  useEffect(() => {
+    if (infoSheetMounted && !activeMovementOption) {
+      setInfoSheetMounted(false);
+      setInfoSheetVisible(false);
+    }
+  }, [activeMovementOption, infoSheetMounted]);
+
+  useEffect(() => {
+    const node = infoCardsScrollerRef.current;
+    if (!node) return;
+    const handleScroll = () => {
+      const children = Array.from(node.children) as HTMLElement[];
+      if (!children.length) return;
+      const current = node.scrollLeft;
+      let bestIndex = 0;
+      let bestDistance = Number.POSITIVE_INFINITY;
+      children.forEach((child, index) => {
+        const distance = Math.abs(child.offsetLeft - current);
+        if (distance < bestDistance) {
+          bestDistance = distance;
+          bestIndex = index;
+        }
+      });
+      setInfoActiveCardIndex(bestIndex);
+    };
+    handleScroll();
+    node.addEventListener("scroll", handleScroll, { passive: true });
+    return () => node.removeEventListener("scroll", handleScroll);
+  }, [infoSheetMounted, movementHistory?.timelinePoints.length, movementHistory?.lastSession]);
 
   return (
     <div
@@ -390,14 +608,20 @@ const WorkoutBuilder = ({ onClose, embedded = false }: WorkoutBuilderProps) => {
                   </span>
                   <Toggle checked={focusInputOnOpen} onChange={setFocusInputOnOpen} />
                 </label>
+                <label className="flex items-center justify-between rounded-xl border border-slate-200 px-4 py-3">
+                  <span className="text-sm font-medium text-slate-800">
+                    Auto-focus weight after select
+                  </span>
+                  <Toggle checked={focusWeightOnSelect} onChange={setFocusWeightOnSelect} />
+                </label>
               </div>
             </SettingsSheet>
           </div>
 
           <div className="flex flex-col   space-y-5 overflow-y-auto px-6  pt-2  pb-24">
-            <div className="space-y-2 rounded-lg border border-white/40 bg-white/90 p-5 shadow-[0_25px_50px_rgba(15,23,42,0.08)]">
+            <div className="space-y-2 rounded-lg border border-white/40 bg-white/90  shadow-[0_25px_50px_rgba(15,23,42,0.08)]">
               <div className="max-h-64 space-y-2 overflow-y-auto pr-1">
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-3 pt-5 pl-2 pr-5">
                   <Input
                     ref={movementInputRef}
                     placeholder="Start typing your favorite movement..."
@@ -408,14 +632,14 @@ const WorkoutBuilder = ({ onClose, embedded = false }: WorkoutBuilderProps) => {
                       setSelectedMovementName(null);
                       workoutSession.setCurrentMovementId("");
                     }}
-                    className="h-14 flex-1 rounded-md border-transparent bg-slate-50/80 px-4 text-lg font-semibold text-slate-900 placeholder:text-slate-400 focus:border-emerald-200 focus:ring-2 focus:ring-emerald-100"
+                    className="h-14 flex-1 rounded-md border-none border-transparent bg-white py-0 text-2xl font-semibold leading-[3.5rem] text-slate-900 placeholder:text-sm placeholder:text-slate-400 shadow-none focus:border-emerald-200 focus:ring-2 focus:ring-emerald-100"
                   />
                   {selectedMovementName && (
                     <Button
                       type="button"
                       size="icon"
                       variant="ghost"
-                      className="rounded-md bg-slate-100 text-slate-500"
+                      className="rounded-md bg-none text-slate-300"
                       onClick={() => {
                         workoutSession.setCurrentMovementId("");
                         setSelectedMovementName("");
@@ -423,10 +647,11 @@ const WorkoutBuilder = ({ onClose, embedded = false }: WorkoutBuilderProps) => {
                         movementInputRef.current?.focus();
                       }}
                     >
-                      <Trash2Icon className="size-5" />
+                      <Trash2Icon className="size-4" />
                     </Button>
                   )}
                 </div>
+                <div className=" pb-5">
                 {movementQuery && (
                   <div className="max-h-44 overflow-y-auto rounded-md border border-slate-100 bg-white shadow-xl">
                     {!hasExactMovement && trimmedMovementQuery && (
@@ -456,8 +681,24 @@ const WorkoutBuilder = ({ onClose, embedded = false }: WorkoutBuilderProps) => {
                   </div>
                 )}
                 {!movementQuery && (
-                  <p className="text-[9px] text-slate-400">Start typing to search your favorite movement.</p>
+                  <div className="flex flex-col  justify-between">
+                    <p className="text-[9px] text-slate-400 px-5">Start typing to search your favorite movement.</p>
+                    <div>
+
+                      {activeMovementOption && (
+                        <button
+                          type="button"
+                          onClick={openInfoSheet}
+                          className="rounded-md border-none p-5 py-1 text-[9px] font-semibold uppercase  text-indigo-500  "
+                        >
+                          More info
+                        </button>
+                      )}
+                    </div>
+                  </div>
                 )}
+                  
+                </div>
               </div>
             </div>
 
@@ -558,34 +799,13 @@ const WorkoutBuilder = ({ onClose, embedded = false }: WorkoutBuilderProps) => {
                   )}
                 </div>
               </div>
-              <div className="space-y-2 max-h-40 overflow-auto">
-                {workoutSession.currentSets.map((set, index) => {
-                  const color = stagedSetColors[index % stagedSetColors.length];
-                  return (
-                    <div
-                      key={set.id}
-                      className="flex items-center justify-between rounded-md px-4 py-3 text-sm font-semibold"
-                      style={{ backgroundColor: color }}
-                    >
-                      <span className="text-slate-800">
-                        {set.weight}kg · {set.reps} reps · {set.rest} sec
-                      </span>
-                      <button
-                        type="button"
-                        className="text-[9px] font-semibold uppercase tracking-wide text-slate-500"
-                        onClick={() => workoutSession.removeSet(set.id)}
-                      >
-                        Delete
-                      </button>
-                    </div>
-                  );
-                })}
-                {workoutSession.currentSets.length === 0 && (
-                  <p className="rounded-md bg-slate-50 px-4 py-3 text-xs text-slate-400">
-                    No sets yet.
-                  </p>
-                )}
-              </div>
+              <SetCardList
+                sets={workoutSession.currentSets}
+                variant="staged"
+                onDelete={workoutSession.removeSet}
+                emptyLabel="No sets yet."
+                maxHeightClassName="max-h-40"
+              />
             </div>
 
             {workoutSession.stagedMovements.length > 0 && (
@@ -601,150 +821,150 @@ const WorkoutBuilder = ({ onClose, embedded = false }: WorkoutBuilderProps) => {
                     .slice()
                     .reverse()
                     .map((movement) => {
-                    const totalReps = movement.sets.reduce((acc, set) => acc + set.reps, 0);
-                    const totalRest = movement.sets.reduce((acc, set) => acc + set.rest, 0);
-                    const consistentWeight = movement.sets.every(
-                      (set) => set.weight === movement.sets[0]?.weight
-                    );
-                    const minWeight = movement.sets.reduce(
-                      (min, set) => Math.min(min, set.weight),
-                      movement.sets[0]?.weight ?? 0
-                    );
-                    const maxWeight = movement.sets.reduce(
-                      (max, set) => Math.max(max, set.weight),
-                      movement.sets[0]?.weight ?? 0
-                    );
-                    const suggestion = movement.sets.length >= 4 && consistentWeight;
+                      const totalReps = movement.sets.reduce((acc, set) => acc + set.reps, 0);
+                      const totalRest = movement.sets.reduce((acc, set) => acc + set.rest, 0);
+                      const consistentWeight = movement.sets.every(
+                        (set) => set.weight === movement.sets[0]?.weight
+                      );
+                      const minWeight = movement.sets.reduce(
+                        (min, set) => Math.min(min, set.weight),
+                        movement.sets[0]?.weight ?? 0
+                      );
+                      const maxWeight = movement.sets.reduce(
+                        (max, set) => Math.max(max, set.weight),
+                        movement.sets[0]?.weight ?? 0
+                      );
+                      const suggestion = movement.sets.length >= 4 && consistentWeight;
 
-                    return (
-                      <div
-                        key={movement.id}
-                        className="rounded-md border border-slate-100  p-4 text-sm text-slate-700 "
-                      >
-                        <div className="mb-3 flex items-center justify-between">
-                          <div>
-                            {editingMovementId === movement.id ? (
-                              <div className="relative">
-                                <input
-                                  className="h-9 w-full rounded-md border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-900"
-                                  value={editingMovementName}
-                                  onChange={(event) => setEditingMovementName(event.target.value)}
-                                  onFocus={(event) => event.target.select()}
-                                  onKeyDown={(event) => {
-                                    if (event.key === "Enter") {
-                                      event.currentTarget.blur();
-                                    }
-                                    if (event.key === "Escape") {
+                      return (
+                        <div
+                          key={movement.id}
+                          className="rounded-md border border-slate-100  p-4 text-sm text-slate-700 "
+                        >
+                          <div className="mb-3 flex items-center justify-between">
+                            <div>
+                              {editingMovementId === movement.id ? (
+                                <div className="relative">
+                                  <input
+                                    className="h-9 w-full rounded-md border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-900"
+                                    value={editingMovementName}
+                                    onChange={(event) => setEditingMovementName(event.target.value)}
+                                    onFocus={(event) => event.target.select()}
+                                    onKeyDown={(event) => {
+                                      if (event.key === "Enter") {
+                                        event.currentTarget.blur();
+                                      }
+                                      if (event.key === "Escape") {
+                                        setEditingMovementId(null);
+                                      }
+                                    }}
+                                    onBlur={() => {
+                                      if (editingMovementName.trim().length > 0) {
+                                        workoutSession.renameStagedMovement(
+                                          movement.id,
+                                          editingMovementName.trim()
+                                        );
+                                      }
                                       setEditingMovementId(null);
-                                    }
-                                  }}
-                                  onBlur={() => {
-                                    if (editingMovementName.trim().length > 0) {
-                                      workoutSession.renameStagedMovement(
-                                        movement.id,
-                                        editingMovementName.trim()
-                                      );
-                                    }
-                                    setEditingMovementId(null);
-                                  }}
-                                  autoFocus
-                                />
-                                {editingMovementName.trim().length > 0 && (
-                                  <div className="absolute left-0 right-0 top-10 z-20 max-h-48 overflow-y-auto rounded-lg border border-slate-200 bg-white shadow-lg">
-                                    {workoutSession.movementLibrary
-                                      .filter((option) =>
-                                        option.name.toLowerCase().includes(
-                                          editingMovementName.trim().toLowerCase()
+                                    }}
+                                    autoFocus
+                                  />
+                                  {editingMovementName.trim().length > 0 && (
+                                    <div className="absolute left-0 right-0 top-10 z-20 max-h-48 overflow-y-auto rounded-lg border border-slate-200 bg-white shadow-lg">
+                                      {workoutSession.movementLibrary
+                                        .filter((option) =>
+                                          option.name.toLowerCase().includes(
+                                            editingMovementName.trim().toLowerCase()
+                                          )
                                         )
-                                      )
-                                      .slice(0, 8)
-                                      .map((option) => (
-                                        <button
-                                          key={option.id}
-                                          type="button"
-                                          className="flex w-full items-center px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50"
-                                          onMouseDown={(event) => event.preventDefault()}
-                                          onClick={() => {
-                                            setEditingMovementName(option.name);
-                                            workoutSession.renameStagedMovement(movement.id, option.name);
-                                            setEditingMovementId(null);
-                                          }}
-                                        >
-                                          {option.name}
-                                        </button>
-                                      ))}
-                                    {workoutSession.movementLibrary.filter((option) =>
-                                      option.name
-                                        .toLowerCase()
-                                        .includes(editingMovementName.trim().toLowerCase())
-                                    ).length === 0 && (
-                                      <div className="px-3 py-2 text-xs text-slate-400">
-                                        Tidak ada hasil.
-                                      </div>
-                                    )}
-                                  </div>
-                                )}
-                              </div>
-                            ) : (
-                              <p
-                                className="text-xl font-semibold text-slate-900"
-                                onDoubleClick={() => {
-                                  setEditingMovementId(movement.id);
-                                  setEditingMovementName(movement.name);
-                                }}
-                              >
-                                {movement.name}
-                              </p>
-                            )}
+                                        .slice(0, 8)
+                                        .map((option) => (
+                                          <button
+                                            key={option.id}
+                                            type="button"
+                                            className="flex w-full items-center px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50"
+                                            onMouseDown={(event) => event.preventDefault()}
+                                            onClick={() => {
+                                              setEditingMovementName(option.name);
+                                              workoutSession.renameStagedMovement(movement.id, option.name);
+                                              setEditingMovementId(null);
+                                            }}
+                                          >
+                                            {option.name}
+                                          </button>
+                                        ))}
+                                      {workoutSession.movementLibrary.filter((option) =>
+                                        option.name
+                                          .toLowerCase()
+                                          .includes(editingMovementName.trim().toLowerCase())
+                                      ).length === 0 && (
+                                          <div className="px-3 py-2 text-xs text-slate-400">
+                                            Tidak ada hasil.
+                                          </div>
+                                        )}
+                                    </div>
+                                  )}
+                                </div>
+                              ) : (
+                                <p
+                                  className="text-xl font-semibold text-slate-900"
+                                  onDoubleClick={() => {
+                                    setEditingMovementId(movement.id);
+                                    setEditingMovementName(movement.name);
+                                  }}
+                                >
+                                  {movement.name}
+                                </p>
+                              )}
 
+                            </div>
+                            <button
+                              type="button"
+                              className="text-[9px] font-semibold uppercase tracking-wide text-slate-400"
+                              onClick={() => setConfirmDeleteMovementId(movement.id)}
+                            >
+                              Delete
+                            </button>
                           </div>
-                          <button
-                            type="button"
-                            className="text-[9px] font-semibold uppercase tracking-wide text-slate-400"
-                            onClick={() => setConfirmDeleteMovementId(movement.id)}
-                          >
-                            Delete
-                          </button>
+                          <div className="grid grid-cols-2 gap-3  text-xs font-semibold text-slate-500">
+                            <div>
+                              <p className="text-[11px] uppercase tracking-wide text-slate-400">
+                                Total Set
+                              </p>
+                              <p className="text-sm text-slate-900">{movement.sets.length}</p>
+                            </div>
+                            <div>
+                              <p className="text-[11px] uppercase tracking-wide text-slate-400">
+                                Total Reps
+                              </p>
+                              <p className="text-sm text-slate-900">{totalReps}</p>
+                            </div>
+                            <div>
+                              <p className="text-[11px] uppercase tracking-wide text-slate-400">
+                                Rentang Beban
+                              </p>
+                              <p className="text-sm text-slate-900">
+                                {minWeight}kg{consistentWeight ? "" : ` – ${maxWeight}kg`}
+                              </p>
+                            </div>
+                            <div>
+                              <p className="text-[11px] uppercase tracking-wide text-slate-400">
+                                Total Rest
+                              </p>
+                              <p className="text-sm text-slate-900">{totalRest} sec</p>
+                            </div>
+                          </div>
+                          {suggestion && (
+                            <div className="mt-3 inline-flex items-center gap-2   py-2 text-xs font-semibold text-indigo-600 ">
+                              <span className="inline-flex size-6 items-center justify-center rounded-full bg-amber-100 text-amber-600">
+                                ↑
+                              </span>
+                              Level Up: +2.5kg suggestion
+                            </div>
+                          )}
                         </div>
-                        <div className="grid grid-cols-2 gap-3  text-xs font-semibold text-slate-500">
-                          <div>
-                            <p className="text-[11px] uppercase tracking-wide text-slate-400">
-                              Total Set
-                            </p>
-                            <p className="text-sm text-slate-900">{movement.sets.length}</p>
-                          </div>
-                          <div>
-                            <p className="text-[11px] uppercase tracking-wide text-slate-400">
-                              Total Reps
-                            </p>
-                            <p className="text-sm text-slate-900">{totalReps}</p>
-                          </div>
-                          <div>
-                            <p className="text-[11px] uppercase tracking-wide text-slate-400">
-                              Rentang Beban
-                            </p>
-                            <p className="text-sm text-slate-900">
-                              {minWeight}kg{consistentWeight ? "" : ` – ${maxWeight}kg`}
-                            </p>
-                          </div>
-                          <div>
-                            <p className="text-[11px] uppercase tracking-wide text-slate-400">
-                              Total Rest
-                            </p>
-                            <p className="text-sm text-slate-900">{totalRest} sec</p>
-                          </div>
-                        </div>
-                        {suggestion && (
-                          <div className="mt-3 inline-flex items-center gap-2   py-2 text-xs font-semibold text-indigo-600 ">
-                            <span className="inline-flex size-6 items-center justify-center rounded-full bg-amber-100 text-amber-600">
-                              ↑
-                            </span>
-                            Level Up: +2.5kg suggestion
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
+                      );
+                    })}
                 </div>
               </div>
             )}
@@ -758,8 +978,8 @@ const WorkoutBuilder = ({ onClose, embedded = false }: WorkoutBuilderProps) => {
       </div>
       {mounted &&
         createPortal(
-            <Button
-              style={{
+          <Button
+            style={{
               bottom: isPlayerActive
                 ? "var(--player-save-bottom, calc(var(--player-offset, 0px) - 14px))"
                 : "calc(var(--bottom-nav-height, 0px) + 10px)",
@@ -770,6 +990,114 @@ const WorkoutBuilder = ({ onClose, embedded = false }: WorkoutBuilderProps) => {
             <SaveIcon className="size-6" />
             <span className="sr-only">Save session</span>
           </Button>,
+          document.body
+        )}
+      {infoSheetMounted && activeMovementOption && movementHistory && typeof document !== "undefined" &&
+        createPortal(
+          <div
+            className={`fixed inset-0 z-[9999] flex flex-col justify-end bg-slate-900/40 transition-opacity duration-300 ${infoSheetVisible ? "opacity-100" : "opacity-0"}`}
+            onClick={closeInfoSheet}
+          >
+            <div
+              role="dialog"
+              aria-modal="true"
+              className="relative z-10 flex w-full flex-col rounded-t-[32px] bg-white px-6 pb-6 pt-3 shadow-[0_-20px_60px_rgba(15,23,42,0.25)] transition-all duration-300"
+              style={{
+                transform: `translateY(calc(${infoSheetVisible ? "0%" : "100%"} + ${infoSheetDragOffset}px))`,
+                height: "78vh",
+              }}
+              onClick={(event) => event.stopPropagation()}
+            >
+              <div
+                className="sticky top-0 z-10 bg-white pb-4"
+                onTouchStart={handleInfoSheetTouchStart}
+                onTouchMove={handleInfoSheetTouchMove}
+                onTouchEnd={handleInfoSheetTouchEnd}
+              >
+                <div className="mx-auto mb-3 mt-2 h-1.5 w-16 rounded-full bg-slate-200" />
+                <div className="space-y-1">
+                  <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-300">
+                    {activeMovementOption.name}
+                  </p>
+                  <div className="flex items-center gap-3">
+                    <p className="text-4xl font-semibold text-indigo-600">
+                      {movementHistory.bestWeight || 0}
+                      <span className="ml-0.5 text-lg text-slate-400">kg</span>
+                    </p>
+                    <span className="rounded-full bg-indigo-50 px-3 py-1 text-xs font-semibold text-indigo-600">
+                      {movementHistory.bestReps || 0} Reps
+                    </span>
+                  </div>
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.3em] text-slate-300">
+                    Total sets {movementHistory.totalSets} • Sessions {movementHistory.totalSessions}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex-1 space-y-5 overflow-y-auto pb-6">
+                <div
+                  ref={infoCardsScrollerRef}
+                  className="flex snap-x snap-mandatory items-stretch gap-4 overflow-x-auto pb-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+                >
+                  <div className="min-w-[98%] snap-center">
+                    {movementHistory.timelinePoints.length > 0 ? (
+                      <div className="h-full min-h-[320px] rounded-2xl border border-slate-100 bg-white p-4 ">
+                        <div className="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
+                          <ChartArea className="size-4" /> Chart
+                        </div>
+                        <MovementChart
+                          points={movementHistory.timelinePoints}
+                          visibleLines={visibleInfoLines}
+                          onToggleLine={(key) =>
+                            setVisibleInfoLines((prev) => ({ ...prev, [key]: !prev[key] }))
+                          }
+                          showLegend={false}
+                          showPointLabels
+                        />
+                      </div>
+                    ) : (
+                      <div className="h-full min-h-[320px] rounded-2xl border border-slate-100 bg-white p-4 text-sm text-slate-400 ">
+                        Belum ada data untuk chart.
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="min-w-[98%] snap-center">
+                    {movementHistory.lastSession && movementHistory.lastSession.movement.sets.length > 0 ? (
+                      <div className="h-full min-h-[320px] rounded-2xl border border-slate-100 bg-white p-4 ">
+                        <div className="mb-3 flex items-center justify-between">
+                          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
+                            Last Sets
+                          </p>
+                          <span className="text-[11px] text-slate-400">
+                            {movementHistory.lastSession.movement.sets.length} sets
+                          </span>
+                        </div>
+                        <SetCardList
+                          sets={movementHistory.lastSession.movement.sets}
+                          variant="history"
+                          emptyLabel="Belum ada data."
+                          maxHeightClassName="max-h-[250px]"
+                        />
+                      </div>
+                    ) : (
+                      <div className="h-full min-h-[320px] rounded-2xl border border-slate-100 bg-white p-4 text-sm text-slate-400 shadow-[0_12px_24px_rgba(15,23,42,0.08)]">
+                        Belum ada data untuk gerakan ini.
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={closeInfoSheet}
+                className="mt-2 flex w-full items-center justify-center gap-2 rounded-full bg-white px-5 py-3 text-sm font-semibold text-slate-900 shadow-[0_6px_19px_rgba(15,23,42,0.12)] focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-200"
+              >
+                Close
+              </button>
+            </div>
+          </div>,
           document.body
         )}
       <ConfirmModal
