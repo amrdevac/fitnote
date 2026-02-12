@@ -10,6 +10,7 @@ export type FitnotePreferences = {
   focusInputOnOpen: boolean;
   focusWeightOnSelect: boolean;
   completedSetThreshold: number;
+  syncRestWithTimer: boolean;
 };
 
 export const defaultPreferences: FitnotePreferences = {
@@ -17,6 +18,7 @@ export const defaultPreferences: FitnotePreferences = {
   focusInputOnOpen: true,
   focusWeightOnSelect: false,
   completedSetThreshold: 5,
+  syncRestWithTimer: false,
 };
 
 const preferencesDb = {

@@ -173,7 +173,7 @@ const useWorkoutSession = () => {
     setInputs((prev) => ({ ...prev, [field]: value }));
   }
 
-  function addSet(): ActionResult {
+  function addSet(): ActionResult<WorkoutSet> {
     const weight = Number.parseFloat(inputs.weight);
     const reps = Number.parseInt(inputs.reps, 10);
     const rest = Number.parseInt(inputs.rest, 10);
@@ -194,7 +194,7 @@ const useWorkoutSession = () => {
     };
     setCurrentSets((prev) => [...prev, newSet]);
     setInputs((prev) => ({ ...prev, weight: "", reps: "", rest: "" }));
-    return { success: true };
+    return { success: true, data: newSet };
   }
 
   function removeSet(id: string) {

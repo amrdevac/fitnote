@@ -37,6 +37,7 @@ const TabataPlayerBar = () => {
   const prev = useTabataPlayerStore((state) => state.prev);
   const adjustSeconds = useTabataPlayerStore((state) => state.adjustSeconds);
   const tick = useTabataPlayerStore((state) => state.tick);
+  const restSyncEnabled = useTabataPlayerStore((state) => state.restSyncEnabled);
   const vibrationMs = useTimerSettings((state) => state.vibrationMs);
   const wakeLockEnabled = useTimerSettings((state) => state.wakeLockEnabled);
   const countdownVolume = useTimerSettings((state) => state.countdownVolume);
@@ -57,6 +58,7 @@ const TabataPlayerBar = () => {
   const hasUserInteractedRef = useRef(false);
 
   const currentStep = useMemo(() => queue[currentIndex], [queue, currentIndex]);
+  const restLockActive = restSyncEnabled && (status === "running" || status === "paused");
   const stepCounts = useMemo(() => {
     const totals = queue.reduce(
       (acc, step) => {
@@ -425,7 +427,14 @@ const TabataPlayerBar = () => {
               >
                 {isRunning ? <PauseIcon className="size-4" /> : <PlayIcon className="size-4" />}
               </Button>
-              <Button type="button" size="icon" variant="ghost" onClick={next} aria-label="Next">
+              <Button
+                type="button"
+                size="icon"
+                variant="ghost"
+                onClick={next}
+                aria-label="Next"
+                disabled={restLockActive}
+              >
                 <SkipForwardIcon className="size-4" />
               </Button>
               <Button

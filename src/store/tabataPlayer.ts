@@ -22,6 +22,10 @@ type TabataPlayerStore = {
   remainingSeconds: number;
   status: PlayerStatus;
   lastUpdatedAt: number | null;
+  currentStepExtraSeconds: number;
+  lastRestCompletedSeconds: number | null;
+  lastRestCompletedAt: number | null;
+  restSyncEnabled: boolean;
   loadTimer: (timer: ExerciseTimer) => void;
   play: () => void;
   pause: () => void;
@@ -31,6 +35,7 @@ type TabataPlayerStore = {
   prev: () => void;
   adjustSeconds: (delta: number) => void;
   tick: () => void;
+  setRestSyncEnabled: (enabled: boolean) => void;
 };
 
 const noopStorage: Storage = {
@@ -139,6 +144,10 @@ export const useTabataPlayerStore = create<TabataPlayerStore>()(
       remainingSeconds: 0,
       status: "idle",
       lastUpdatedAt: null,
+      currentStepExtraSeconds: 0,
+      lastRestCompletedSeconds: null,
+      lastRestCompletedAt: null,
+      restSyncEnabled: false,
       loadTimer: (timer) => {
         const queue = buildQueue(timer);
         set({
@@ -149,6 +158,7 @@ export const useTabataPlayerStore = create<TabataPlayerStore>()(
           remainingSeconds: queue[0]?.duration ?? 0,
           status: queue.length ? "paused" : "idle",
           lastUpdatedAt: Date.now(),
+          currentStepExtraSeconds: 0,
         });
       },
       play: () => {
@@ -184,6 +194,7 @@ export const useTabataPlayerStore = create<TabataPlayerStore>()(
           remainingSeconds: queue[0]?.duration ?? 0,
           status: queue.length ? "paused" : "idle",
           lastUpdatedAt: Date.now(),
+          currentStepExtraSeconds: 0,
         });
       },
       stop: () => {
@@ -195,6 +206,7 @@ export const useTabataPlayerStore = create<TabataPlayerStore>()(
           remainingSeconds: 0,
           status: "idle",
           lastUpdatedAt: Date.now(),
+          currentStepExtraSeconds: 0,
         });
       },
       next: () => {
@@ -208,6 +220,7 @@ export const useTabataPlayerStore = create<TabataPlayerStore>()(
           currentIndex: nextIndex,
           remainingSeconds: queue[nextIndex].duration,
           lastUpdatedAt: Date.now(),
+          currentStepExtraSeconds: 0,
         });
       },
       prev: () => {
@@ -218,21 +231,28 @@ export const useTabataPlayerStore = create<TabataPlayerStore>()(
           currentIndex: prevIndex,
           remainingSeconds: queue[prevIndex].duration,
           lastUpdatedAt: Date.now(),
+          currentStepExtraSeconds: 0,
         });
       },
       adjustSeconds: (delta) => {
-        set((state) => ({
-          remainingSeconds: Math.max(1, state.remainingSeconds + delta),
-          lastUpdatedAt: Date.now(),
-        }));
+        set((state) => {
+          const nextRemaining = Math.max(1, state.remainingSeconds + delta);
+          const appliedDelta = nextRemaining - state.remainingSeconds;
+          return {
+            remainingSeconds: nextRemaining,
+            currentStepExtraSeconds: state.currentStepExtraSeconds + appliedDelta,
+            lastUpdatedAt: Date.now(),
+          };
+        });
       },
       tick: () => {
-        const { status, remainingSeconds, queue, currentIndex } = get();
+        const { status, remainingSeconds, queue, currentIndex, currentStepExtraSeconds } = get();
         if (status !== "running" || !queue.length) return;
         if (remainingSeconds > 1) {
           set({ remainingSeconds: remainingSeconds - 1, lastUpdatedAt: Date.now() });
           return;
         }
+        const currentStep = queue[currentIndex];
         const nextIndex = currentIndex + 1;
         if (nextIndex >= queue.length) {
           set({ status: "finished", remainingSeconds: 0, lastUpdatedAt: Date.now() });
@@ -242,8 +262,18 @@ export const useTabataPlayerStore = create<TabataPlayerStore>()(
           currentIndex: nextIndex,
           remainingSeconds: queue[nextIndex].duration,
           lastUpdatedAt: Date.now(),
+          currentStepExtraSeconds: 0,
+          lastRestCompletedSeconds:
+            currentStep?.type === "rest" || currentStep?.type === "setRest"
+              ? currentStep.duration + currentStepExtraSeconds
+              : null,
+          lastRestCompletedAt:
+            currentStep?.type === "rest" || currentStep?.type === "setRest"
+              ? Date.now()
+              : null,
         });
       },
+      setRestSyncEnabled: (enabled) => set({ restSyncEnabled: enabled }),
     }),
     {
       name: "fitnote:tabata-player",

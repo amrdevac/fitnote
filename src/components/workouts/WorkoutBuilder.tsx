@@ -68,6 +68,10 @@ const WorkoutBuilder = ({ onClose, embedded = false }: WorkoutBuilderProps) => {
   const workoutSession = useWorkoutSession();
   const playerStatus = useTabataPlayerStore((state) => state.status);
   const hasPlayer = useTabataPlayerStore((state) => state.queue.length > 0);
+  const restSyncEnabled = useTabataPlayerStore((state) => state.restSyncEnabled);
+  const setRestSyncEnabled = useTabataPlayerStore((state) => state.setRestSyncEnabled);
+  const lastRestCompletedSeconds = useTabataPlayerStore((state) => state.lastRestCompletedSeconds);
+  const lastRestCompletedAt = useTabataPlayerStore((state) => state.lastRestCompletedAt);
   const isPlayerActive = hasPlayer && playerStatus !== "idle";
   const [mounted, setMounted] = useState(false);
   const [panelState, setPanelState] = useState<"enter" | "active" | "exit">("enter");
@@ -174,6 +178,9 @@ const WorkoutBuilder = ({ onClose, embedded = false }: WorkoutBuilderProps) => {
   const [completedSetThreshold, setCompletedSetThreshold] = useState(
     defaultPreferences.completedSetThreshold
   );
+  const [syncRestWithTimer, setSyncRestWithTimer] = useState(
+    defaultPreferences.syncRestWithTimer
+  );
   const [preferencesReady, setPreferencesReady] = useState(false);
   const [infoSheetMounted, setInfoSheetMounted] = useState(false);
   const [infoSheetVisible, setInfoSheetVisible] = useState(false);
@@ -189,6 +196,8 @@ const WorkoutBuilder = ({ onClose, embedded = false }: WorkoutBuilderProps) => {
   const setCardsScrollerRef = useRef<HTMLDivElement | null>(null);
   const [setCardsActiveIndex, setSetCardsActiveIndex] = useState(0);
   const preferencesLoadedRef = useRef(false);
+  const lastSavedSetIdRef = useRef<string | null>(null);
+  const lastAppliedRestAtRef = useRef<number | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -200,6 +209,7 @@ const WorkoutBuilder = ({ onClose, embedded = false }: WorkoutBuilderProps) => {
         setFocusInputOnOpen(stored.focusInputOnOpen);
         setFocusWeightOnSelect(stored.focusWeightOnSelect);
         setCompletedSetThreshold(stored.completedSetThreshold);
+        setSyncRestWithTimer(stored.syncRestWithTimer);
       } catch (error) {
         console.error("Failed to load FitNote preferences", error);
       } finally {
@@ -226,9 +236,19 @@ const WorkoutBuilder = ({ onClose, embedded = false }: WorkoutBuilderProps) => {
   useEffect(() => {
     if (!preferencesLoadedRef.current) return;
     preferencesDb
-      .save({ showAddButton, focusInputOnOpen, focusWeightOnSelect, completedSetThreshold })
+      .save({
+        showAddButton,
+        focusInputOnOpen,
+        focusWeightOnSelect,
+        completedSetThreshold,
+        syncRestWithTimer,
+      })
       .catch((error) => console.error("Failed to save FitNote preferences", error));
-  }, [showAddButton, focusInputOnOpen, focusWeightOnSelect, completedSetThreshold]);
+  }, [showAddButton, focusInputOnOpen, focusWeightOnSelect, completedSetThreshold, syncRestWithTimer]);
+
+  useEffect(() => {
+    setRestSyncEnabled(syncRestWithTimer);
+  }, [setRestSyncEnabled, syncRestWithTimer]);
 
   useEffect(() => {
     if (!preferencesLoadedRef.current || !focusInputOnOpen || panelState !== "active") {
@@ -244,6 +264,21 @@ const WorkoutBuilder = ({ onClose, embedded = false }: WorkoutBuilderProps) => {
     );
     setSelectedMovementName(selected ? selected.name : null);
   }, [workoutSession.currentMovementId, workoutSession.movementLibrary, movementQuery]);
+
+  useEffect(() => {
+    if (!syncRestWithTimer) return;
+    if (!lastRestCompletedAt || lastRestCompletedAt === lastAppliedRestAtRef.current) return;
+    const lastSetId = lastSavedSetIdRef.current;
+    if (!lastSetId) return;
+    if (!lastRestCompletedSeconds || lastRestCompletedSeconds <= 0) return;
+    workoutSession.updateCurrentSet(lastSetId, { rest: lastRestCompletedSeconds });
+    lastAppliedRestAtRef.current = lastRestCompletedAt;
+  }, [
+    syncRestWithTimer,
+    lastRestCompletedAt,
+    lastRestCompletedSeconds,
+    workoutSession,
+  ]);
 
   const trimmedMovementQuery = movementQuery.trim();
   const filteredMovements = useMemo(() => {
@@ -269,6 +304,8 @@ const WorkoutBuilder = ({ onClose, embedded = false }: WorkoutBuilderProps) => {
       ) ?? null,
     [workoutSession.currentMovementId, workoutSession.movementLibrary]
   );
+
+  const restLockActive = restSyncEnabled && playerStatus === "running";
 
   const movementHistory = useMemo(() => {
     if (!activeMovementOption) return null;
@@ -375,6 +412,9 @@ const WorkoutBuilder = ({ onClose, embedded = false }: WorkoutBuilderProps) => {
       showError(result.error);
       return;
     }
+    if (result.data?.id) {
+      lastSavedSetIdRef.current = result.data.id;
+    }
     showSuccess("Set saved temporarily.");
     weightInputRef.current?.focus();
   }
@@ -385,6 +425,7 @@ const WorkoutBuilder = ({ onClose, embedded = false }: WorkoutBuilderProps) => {
       showError(result.error);
       return;
     }
+    lastSavedSetIdRef.current = null;
     showSuccess("Movement added to session.");
   }
 
@@ -399,6 +440,7 @@ const WorkoutBuilder = ({ onClose, embedded = false }: WorkoutBuilderProps) => {
   }
 
   function handleSelectMovement(optionId: string) {
+    if (restLockActive) return;
     workoutSession.setCurrentMovementId(optionId);
     const selected = workoutSession.movementLibrary.find((movement) => movement.id === optionId);
     setSelectedMovementName(selected?.name ?? "");
@@ -409,6 +451,7 @@ const WorkoutBuilder = ({ onClose, embedded = false }: WorkoutBuilderProps) => {
   }
 
   function handleAddCustomMovement() {
+    if (restLockActive) return;
     const result = workoutSession.addCustomMovement(trimmedMovementQuery || movementQuery);
     if (!result.success || !result.data) {
       showError(result.error);
@@ -646,6 +689,12 @@ const WorkoutBuilder = ({ onClose, embedded = false }: WorkoutBuilderProps) => {
                 </label>
                 <label className="flex items-center justify-between rounded-xl border border-slate-200 px-4 py-3">
                   <span className="text-sm font-medium text-slate-800">
+                    Sync rest timer to last set
+                  </span>
+                  <Toggle checked={syncRestWithTimer} onChange={setSyncRestWithTimer} />
+                </label>
+                <label className="flex items-center justify-between rounded-xl border border-slate-200 px-4 py-3">
+                  <span className="text-sm font-medium text-slate-800">
                     Target set selesai
                   </span>
                   <input
@@ -678,14 +727,16 @@ const WorkoutBuilder = ({ onClose, embedded = false }: WorkoutBuilderProps) => {
                       setSelectedMovementName(null);
                       workoutSession.setCurrentMovementId("");
                     }}
-                    className="h-14 flex-1 rounded-md border-none border-transparent bg-white py-0 text-2xl font-semibold leading-[3.5rem] text-slate-900 placeholder:text-sm placeholder:text-slate-400 shadow-none focus:border-emerald-200 focus:ring-2 focus:ring-emerald-100"
+                    disabled={restLockActive}
+                    className="h-14 flex-1 rounded-md border-none border-transparent bg-white py-0 text-2xl font-semibold leading-[3.5rem] text-slate-900 placeholder:text-sm placeholder:text-slate-400 shadow-none focus:border-emerald-200 focus:ring-2 focus:ring-emerald-100 disabled:cursor-not-allowed disabled:opacity-60"
                   />
                   {selectedMovementName && (
                     <Button
                       type="button"
                       size="icon"
                       variant="ghost"
-                      className="rounded-md bg-none text-slate-300"
+                      className="rounded-md bg-none text-slate-300 disabled:cursor-not-allowed disabled:opacity-60"
+                      disabled={restLockActive}
                       onClick={() => {
                         workoutSession.setCurrentMovementId("");
                         setSelectedMovementName("");
@@ -703,6 +754,7 @@ const WorkoutBuilder = ({ onClose, embedded = false }: WorkoutBuilderProps) => {
                     {!hasExactMovement && trimmedMovementQuery && (
                       <button
                         type="button"
+                        disabled={restLockActive}
                         className="flex w-full items-center justify-between border-b border-slate-100 px-4 py-3 text-left text-sm font-medium text-slate-900 hover:bg-slate-50"
                         onClick={handleAddCustomMovement}
                       >
@@ -717,8 +769,9 @@ const WorkoutBuilder = ({ onClose, embedded = false }: WorkoutBuilderProps) => {
                       <button
                         type="button"
                         key={movement.id}
-                        className="w-full border-b border-slate-100 px-4 py-3 text-left text-sm last:border-0 hover:bg-slate-50"
+                        className="w-full border-b border-slate-100 px-4 py-3 text-left text-sm last:border-0 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
                         onClick={() => handleSelectMovement(movement.id)}
+                        disabled={restLockActive}
                       >
                         <span className="block font-medium text-slate-900">{movement.name}</span>
                         <span className="text-[9px] text-slate-500">{movement.description}</span>
