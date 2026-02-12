@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { MoreVerticalIcon, PlusIcon, SaveIcon, Trash2Icon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/ui/use-toast";
@@ -51,10 +52,14 @@ const WorkoutBuilder = ({ onClose, embedded = false }: WorkoutBuilderProps) => {
   const playerStatus = useTabataPlayerStore((state) => state.status);
   const hasPlayer = useTabataPlayerStore((state) => state.queue.length > 0);
   const isPlayerActive = hasPlayer && playerStatus !== "idle";
+  const [mounted, setMounted] = useState(false);
   const [panelState, setPanelState] = useState<"enter" | "active" | "exit">("enter");
   useEffect(() => {
     const id = requestAnimationFrame(() => setPanelState("active"));
     return () => cancelAnimationFrame(id);
+  }, []);
+  useEffect(() => {
+    setMounted(true);
   }, []);
 
   useEffect(() => {
@@ -145,6 +150,7 @@ const WorkoutBuilder = ({ onClose, embedded = false }: WorkoutBuilderProps) => {
   const [editingMovementName, setEditingMovementName] = useState<string>("");
   const [showAddButton, setShowAddButton] = useState(defaultPreferences.showAddButton);
   const [focusInputOnOpen, setFocusInputOnOpen] = useState(defaultPreferences.focusInputOnOpen);
+  const [preferencesReady, setPreferencesReady] = useState(false);
   const preferencesLoadedRef = useRef(false);
 
   useEffect(() => {
@@ -160,6 +166,7 @@ const WorkoutBuilder = ({ onClose, embedded = false }: WorkoutBuilderProps) => {
       } finally {
         if (!cancelled) {
           preferencesLoadedRef.current = true;
+          setPreferencesReady(true);
         }
       }
     }
@@ -454,7 +461,7 @@ const WorkoutBuilder = ({ onClose, embedded = false }: WorkoutBuilderProps) => {
               </div>
             </div>
 
-            <div className={`grid gap-4 ${showAddButton ? "grid-cols-4" : "grid-cols-3"}`}>
+            <div className={`grid gap-4 ${preferencesReady && showAddButton ? "grid-cols-4" : "grid-cols-3"}`}>
               <div className="space-y-3 rounded-lg border border-white/60 bg-white/90  py-4 text-center shadow-[0_15px_35px_rgba(15,23,42,0.08)]">
                 <Label htmlFor="input-weight" className="text-[9px] font-semibold uppercase px-3 tracking-wide text-slate-400">
                   kg
@@ -503,7 +510,7 @@ const WorkoutBuilder = ({ onClose, embedded = false }: WorkoutBuilderProps) => {
                   placeholder="--"
                 />
               </div>
-              {showAddButton && (
+              {preferencesReady && showAddButton && (
                 <div className="flex items-center justify-center">
                   <Button
                     type="button"
@@ -557,7 +564,7 @@ const WorkoutBuilder = ({ onClose, embedded = false }: WorkoutBuilderProps) => {
                   return (
                     <div
                       key={set.id}
-                      className="flex items-center justify-between rounded-[24px] px-4 py-3 text-sm font-semibold"
+                      className="flex items-center justify-between rounded-md px-4 py-3 text-sm font-semibold"
                       style={{ backgroundColor: color }}
                     >
                       <span className="text-slate-800">
@@ -749,18 +756,22 @@ const WorkoutBuilder = ({ onClose, embedded = false }: WorkoutBuilderProps) => {
 
         </div>
       </div>
-      <Button
-        style={{
-          bottom: isPlayerActive
-            ? "calc(var(--player-offset, 0px) - 14px)"
-            : "calc(var(--bottom-nav-height, 0px) + 10px)",
-        }}
-        className="fixed right-5 z-50 size-14 rounded-full bg-indigo-600 text-white shadow-[0_30px_60px_rgba(79,70,229,0.35)]"
-        onClick={() => setConfirmSaveOpen(true)}
-      >
-        <SaveIcon className="size-6" />
-        <span className="sr-only">Save session</span>
-      </Button>
+      {mounted &&
+        createPortal(
+            <Button
+              style={{
+              bottom: isPlayerActive
+                ? "var(--player-save-bottom, calc(var(--player-offset, 0px) - 14px))"
+                : "calc(var(--bottom-nav-height, 0px) + 10px)",
+            }}
+            className="fixed right-5 z-[0] size-14 rounded-full bg-indigo-600 text-white shadow-[0_30px_60px_rgba(79,70,229,0.35)]"
+            onClick={() => setConfirmSaveOpen(true)}
+          >
+            <SaveIcon className="size-6" />
+            <span className="sr-only">Save session</span>
+          </Button>,
+          document.body
+        )}
       <ConfirmModal
         isOpen={confirmSaveOpen}
         title="Save workout session?"

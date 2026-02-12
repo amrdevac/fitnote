@@ -10,6 +10,8 @@ import {
   PlusIcon,
   MoreVerticalIcon,
   PencilIcon,
+  MinusIcon,
+  ShieldCheckIcon,
 } from "lucide-react";
 import { Button } from "@/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/ui/card";
@@ -60,8 +62,11 @@ const ExerciseTimerList = ({ onClose, embedded = false }: ExerciseTimerListProps
   const setVibrationMs = useTimerSettings((state) => state.setVibrationMs);
   const wakeLockEnabled = useTimerSettings((state) => state.wakeLockEnabled);
   const setWakeLockEnabled = useTimerSettings((state) => state.setWakeLockEnabled);
+  const countdownVolume = useTimerSettings((state) => state.countdownVolume);
+  const setCountdownVolume = useTimerSettings((state) => state.setCountdownVolume);
   const { toast } = useToast();
   const containerRef = useRef<HTMLDivElement>(null);
+  const leadInSecondsRef = useRef<HTMLInputElement>(null);
   const swipeStartX = useRef<number | null>(null);
   const swipeAnimationRef = useRef<number | null>(null);
   const swipeProgressRef = useRef(0);
@@ -71,6 +76,31 @@ const ExerciseTimerList = ({ onClose, embedded = false }: ExerciseTimerListProps
   const [leadInMinutes, setLeadInMinutes] = useState("00");
   const [leadInSecs, setLeadInSecs] = useState("03");
   const [vibrationInput, setVibrationInput] = useState("200");
+  const vibrationStep = 50;
+  const vibrationMax = 1000;
+
+  const clampVibration = (value: number) => Math.min(vibrationMax, Math.max(0, value));
+  const previewCountdownVoice = (volume: "low" | "normal" | "medium" | "loud") => {
+    if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
+    const utterance = new SpeechSynthesisUtterance("Hello");
+    utterance.lang = "en-US";
+    utterance.rate = 1.05;
+    switch (volume) {
+      case "low":
+        utterance.volume = 0.25;
+        break;
+      case "medium":
+        utterance.volume = 0.7;
+        break;
+      case "loud":
+        utterance.volume = 1;
+        break;
+      default:
+        utterance.volume = 0.5;
+    }
+    window.speechSynthesis.cancel();
+    window.speechSynthesis.speak(utterance);
+  };
 
   useEffect(() => {
     const handleClose = () => setMenuOpenId(null);
@@ -342,84 +372,181 @@ const ExerciseTimerList = ({ onClose, embedded = false }: ExerciseTimerListProps
         onOpenChange={setSettingsOpen}
         preventAutoFocus
       >
-        <div className="mt-2">
-          <Label className="text-xs uppercase text-slate-500">Global lead-in (mm:ss)</Label>
-          <div className="mt-2 flex items-center gap-2">
-            <Input
-              inputMode="numeric"
-              value={leadInMinutes}
-              onChange={(event) => setLeadInMinutes(sanitizeTimeInput(event.target.value))}
-              onBlur={() => setLeadInMinutes(padTime(leadInMinutes))}
-              className="w-16 text-center text-lg font-semibold"
-            />
-            <span className="text-lg font-semibold text-slate-400">:</span>
-            <Input
-              inputMode="numeric"
-              value={leadInSecs}
-              onChange={(event) => setLeadInSecs(sanitizeTimeInput(event.target.value))}
-              onBlur={() => setLeadInSecs(padTime(leadInSecs))}
-              className="w-16 text-center text-lg font-semibold"
+        <div className="mt-2 space-y-4">
+          <div className="rounded-3xl border border-slate-200 bg-white p-4 shadow-[0_10px_30px_rgba(15,23,42,0.06)]">
+            <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-wide text-slate-400">
+              <TimerResetIcon className="size-4 text-indigo-500" />
+              <span>Global lead-in (mm:ss)</span>
+            </div>
+            <div className="mt-4 flex items-center justify-center gap-4 rounded-2xl border border-slate-200 bg-white px-6 py-4">
+              <div className="text-center">
+                <Input
+                  inputMode="numeric"
+                  value={leadInMinutes}
+                  onChange={(event) => {
+                    const next = sanitizeTimeInput(event.target.value);
+                    setLeadInMinutes(next);
+                    if (next.length >= 2) {
+                      leadInSecondsRef.current?.focus();
+                    }
+                  }}
+                  onFocus={(event) => event.target.select()}
+                  onBlur={() => setLeadInMinutes(padTime(leadInMinutes))}
+                  className="w-14 border-none bg-transparent text-center text-2xl font-semibold text-slate-900 shadow-none focus-visible:ring-0"
+                />
+                <p className="mt-1 text-[10px] font-semibold text-slate-400">MIN</p>
+              </div>
+              <span className="text-2xl font-semibold text-slate-300">:</span>
+              <div className="text-center">
+                <Input
+                  inputMode="numeric"
+                  ref={leadInSecondsRef}
+                  value={leadInSecs}
+                  onChange={(event) => setLeadInSecs(sanitizeTimeInput(event.target.value))}
+                  onFocus={(event) => event.target.select()}
+                  onBlur={() => setLeadInSecs(padTime(leadInSecs))}
+                  className="w-14 border-none bg-transparent text-center text-2xl font-semibold text-slate-900 shadow-none focus-visible:ring-0"
+                />
+                <p className="mt-1 text-[10px] font-semibold text-slate-400">SEC</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="rounded-3xl border border-slate-200 bg-white p-4 shadow-[0_10px_30px_rgba(15,23,42,0.06)]">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-wide text-slate-400">
+                <HourglassIcon className="size-4 text-indigo-500" />
+                <span>Vibration duration</span>
+              </div>
+              <span className="text-[10px] text-slate-400">0 to disable</span>
+            </div>
+            <div className="mt-4 flex items-center justify-between">
+              <div className="flex items-end gap-1">
+                <span className="text-2xl font-semibold text-slate-900">
+                  {vibrationInput || "0"}
+                </span>
+                <span className="pb-1 text-xs font-semibold text-slate-400">ms</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-100 text-slate-500"
+                  onClick={() => {
+                    const nextValue = clampVibration(
+                      Number.parseInt(vibrationInput || "0", 10) - vibrationStep
+                    );
+                    setVibrationInput(nextValue.toString());
+                  }}
+                  aria-label="Decrease vibration"
+                >
+                  <MinusIcon className="size-4" />
+                </button>
+                <button
+                  type="button"
+                  className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-100 text-slate-500"
+                  onClick={() => {
+                    const nextValue = clampVibration(
+                      Number.parseInt(vibrationInput || "0", 10) + vibrationStep
+                    );
+                    setVibrationInput(nextValue.toString());
+                  }}
+                  aria-label="Increase vibration"
+                >
+                  <PlusIcon className="size-4" />
+                </button>
+              </div>
+            </div>
+            <input
+              type="range"
+              min={0}
+              max={vibrationMax}
+              step={vibrationStep}
+              value={clampVibration(Number.parseInt(vibrationInput || "0", 10))}
+              onChange={(event) => setVibrationInput(event.target.value)}
+              className="mt-4 h-2 w-full cursor-pointer appearance-none rounded-full bg-slate-200 accent-indigo-500"
             />
           </div>
-        </div>
-        <div className="mt-5">
-          <Label className="text-xs uppercase text-slate-500">Vibration duration (ms)</Label>
-          <div className="mt-2 flex items-center gap-2">
-            <Input
-              inputMode="numeric"
-              value={vibrationInput}
-              onChange={(event) =>
-                setVibrationInput(event.target.value.replace(/\D/g, "").slice(0, 4))
-              }
-              onBlur={() =>
-                setVibrationInput(
-                  Math.max(0, Number.parseInt(vibrationInput || "0", 10)).toString()
-                )
-              }
-              className="w-24 text-center text-lg font-semibold"
-            />
-            <span className="text-xs text-slate-400">0 to disable</span>
+
+          <div className="rounded-3xl border border-slate-200 bg-white p-4 shadow-[0_10px_30px_rgba(15,23,42,0.06)]">
+            <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-wide text-slate-400">
+              <TimerResetIcon className="size-4 text-indigo-500" />
+              <span>Countdown volume</span>
+            </div>
+            <div className="mt-3 grid grid-cols-4 gap-2">
+              {[
+                { id: "low", label: "Low" },
+                { id: "normal", label: "Normal" },
+                { id: "medium", label: "Medium" },
+                { id: "loud", label: "Loud" },
+              ].map((option) => {
+                const active = countdownVolume === option.id;
+                return (
+                  <button
+                    key={option.id}
+                    type="button"
+                    className={`rounded-2xl px-3 py-2 text-xs font-semibold transition ${
+                      active
+                        ? "bg-indigo-500 text-white shadow-[0_10px_20px_rgba(79,70,229,0.35)]"
+                        : "bg-slate-100 text-slate-500 hover:bg-slate-200"
+                    }`}
+                    onClick={() => {
+                      const next = option.id as "low" | "normal" | "medium" | "loud";
+                      setCountdownVolume(next);
+                      previewCountdownVoice(next);
+                    }}
+                  >
+                    {option.label}
+                  </button>
+                );
+              })}
+            </div>
           </div>
-        </div>
-        <div className="mt-5 flex items-center justify-between rounded-xl border border-slate-200 px-4 py-3">
-          <div>
-            <p className="text-sm font-medium text-slate-800">Wake lock</p>
-            <p className="text-xs text-slate-400">Keep the screen on while the timer runs.</p>
+
+          <div className="rounded-3xl border border-slate-200 bg-white p-4 shadow-[0_10px_30px_rgba(15,23,42,0.06)]">
+            <div className="flex items-center gap-3">
+              <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-indigo-50 text-indigo-500">
+                <ShieldCheckIcon className="size-5" />
+              </div>
+              <div className="flex-1">
+                <p className="text-sm font-semibold text-slate-900">Wake lock</p>
+                <p className="text-xs text-slate-400">Keep the screen on while timer runs</p>
+              </div>
+              <button
+                type="button"
+                role="switch"
+                aria-checked={wakeLockEnabled}
+                onClick={() => setWakeLockEnabled(!wakeLockEnabled)}
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition ${wakeLockEnabled ? "bg-indigo-500" : "bg-slate-300"
+                  }`}
+              >
+                <span
+                  className={`inline-block h-5 w-5 transform rounded-full bg-white transition ${wakeLockEnabled ? "translate-x-5" : "translate-x-1"
+                    }`}
+                />
+              </button>
+            </div>
           </div>
-          <button
-            type="button"
-            role="switch"
-            aria-checked={wakeLockEnabled}
-            onClick={() => setWakeLockEnabled(!wakeLockEnabled)}
-            className={`relative inline-flex h-6 w-11 items-center rounded-full transition ${wakeLockEnabled ? "bg-slate-900" : "bg-slate-300"
-              }`}
-          >
-            <span
-              className={`inline-block h-5 w-5 transform rounded-full bg-white transition ${wakeLockEnabled ? "translate-x-5" : "translate-x-1"
-                }`}
-            />
-          </button>
-        </div>
-        <div className="mt-6 flex gap-2">
-          <Button variant="outline" className="flex-1" onClick={() => setSettingsOpen(false)}>
-            Cancel
-          </Button>
-          <Button
-            className="flex-1"
-            onClick={() => {
-              const seconds = parseTime(leadInMinutes, leadInSecs);
-              if (!Number.isNaN(seconds)) {
-                setLeadInSeconds(seconds);
-              }
-              const vibrationValue = Number.parseInt(vibrationInput || "0", 10);
-              if (!Number.isNaN(vibrationValue)) {
-                setVibrationMs(vibrationValue);
-              }
-              setSettingsOpen(false);
-            }}
-          >
-            Save
-          </Button>
+
+          <div className=" -mx-6 ">
+            <div className="flex gap-3 px-6 w-full">
+              <Button
+                className="flex-1 rounded-2xl bg-indigo-500 text-white shadow-[0_16px_30px_rgba(79,70,229,0.35)]"
+                onClick={() => {
+                  const seconds = parseTime(leadInMinutes, leadInSecs);
+                  if (!Number.isNaN(seconds)) {
+                    setLeadInSeconds(seconds);
+                  }
+                  const vibrationValue = Number.parseInt(vibrationInput || "0", 10);
+                  if (!Number.isNaN(vibrationValue)) {
+                    setVibrationMs(vibrationValue);
+                  }
+                  setSettingsOpen(false);
+                }}
+              >
+                Save Changes
+              </Button>
+            </div>
+          </div>
         </div>
       </SettingsSheet>
     </div>

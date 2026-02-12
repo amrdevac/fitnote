@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -53,11 +53,14 @@ export default function BottomNav() {
     setMounted(true);
   }, []);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
+    if (!mounted) return;
     if (typeof document === "undefined") return;
     const root = document.documentElement;
     const updateNavHeight = () => {
-      const height = navRef.current?.offsetHeight ?? 0;
+      console.log(navRef.current?.offsetHeight)
+      const heightNumber = navRef.current?.offsetHeight ?? 0;
+      const height = heightNumber - 1;
       root.style.setProperty("--bottom-nav-height", `${height}px`);
     };
     updateNavHeight();
@@ -66,7 +69,7 @@ export default function BottomNav() {
       window.removeEventListener("resize", updateNavHeight);
       root.style.removeProperty("--bottom-nav-height");
     };
-  }, []);
+  }, [mounted]);
 
   if (!mounted) return null;
 

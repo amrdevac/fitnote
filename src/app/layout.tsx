@@ -32,7 +32,6 @@ export const metadata: Metadata = {
     ],
   },
   manifest: "/manifest.webmanifest",
-  themeColor: "#F1FBF6",
   other: {
     "navigation-bar-color": "#ffffff",
     "msapplication-navbutton-color": "#ffffff",
@@ -56,6 +55,7 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
+  themeColor: "#F1FBF6",
 };
 
 export default function RootLayout({

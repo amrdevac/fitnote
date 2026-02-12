@@ -39,10 +39,12 @@ const TabataPlayerBar = () => {
   const tick = useTabataPlayerStore((state) => state.tick);
   const vibrationMs = useTimerSettings((state) => state.vibrationMs);
   const wakeLockEnabled = useTimerSettings((state) => state.wakeLockEnabled);
+  const countdownVolume = useTimerSettings((state) => state.countdownVolume);
   const [isClosing, setIsClosing] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
   const [confirmAction, setConfirmAction] = useState<"reset" | "stop" | null>(null);
-  const dragStartY = useRef<number | null>(null);
+  const [isMinimized, setIsMinimized] = useState(false);
+  const dragStartPoint = useRef<{ x: number; y: number } | null>(null);
   const previousPaddingRef = useRef<string | null>(null);
   const lastAnnouncedRef = useRef<{ stepId: string | null; second: number | null }>({
     stepId: null,
@@ -111,6 +113,7 @@ const TabataPlayerBar = () => {
   useEffect(() => {
     if (queue.length) {
       setIsClosing(false);
+      setIsMinimized(false);
     }
   }, [queue.length]);
 
@@ -121,16 +124,30 @@ const TabataPlayerBar = () => {
       if (previousPaddingRef.current === null) {
         previousPaddingRef.current = document.body.style.paddingBottom;
       }
-      root.style.setProperty("--player-offset", "calc(150px + var(--bottom-nav-height, 0px))");
-      document.body.style.paddingBottom = "calc(120px + var(--bottom-nav-height, 0px))";
+      if (isMinimized) {
+        root.style.setProperty("--player-offset", "calc(72px + var(--bottom-nav-height, 0px))");
+        document.body.style.paddingBottom = "calc(84px + var(--bottom-nav-height, 0px))";
+        root.style.setProperty(
+          "--player-save-bottom",
+          "calc(var(--bottom-nav-height, 0px) + 10px)"
+        );
+      } else {
+        root.style.setProperty("--player-offset", "calc(150px + var(--bottom-nav-height, 0px))");
+        document.body.style.paddingBottom = "calc(120px + var(--bottom-nav-height, 0px))";
+        root.style.setProperty(
+          "--player-save-bottom",
+          "calc(var(--player-offset, 0px) - 14px)"
+        );
+      }
       return;
     }
     root.style.removeProperty("--player-offset");
+    root.style.removeProperty("--player-save-bottom");
     if (previousPaddingRef.current !== null) {
       document.body.style.paddingBottom = previousPaddingRef.current;
       previousPaddingRef.current = null;
     }
-  }, [isClosing, queue.length]);
+  }, [isClosing, isMinimized, queue.length]);
 
   useEffect(() => {
     if (typeof navigator === "undefined" || !("wakeLock" in navigator)) return;
@@ -249,6 +266,19 @@ const TabataPlayerBar = () => {
     const utterance = new SpeechSynthesisUtterance();
     utterance.lang = "id-ID";
     utterance.rate = 1.4;
+    switch (countdownVolume) {
+      case "low":
+        utterance.volume = 0.25;
+        break;
+      case "medium":
+        utterance.volume = 0.7;
+        break;
+      case "loud":
+        utterance.volume = 1;
+        break;
+      default:
+        utterance.volume = 0.5;
+    }
     switch (remainingSeconds) {
       case 5:
         utterance.text = "lima";
@@ -273,24 +303,39 @@ const TabataPlayerBar = () => {
   }, [currentStep, remainingSeconds, status, vibrationMs]);
 
   const handleTouchStart = (event: React.TouchEvent<HTMLDivElement>) => {
-    dragStartY.current = event.touches[0]?.clientY ?? null;
+    dragStartPoint.current = {
+      x: event.touches[0]?.clientX ?? 0,
+      y: event.touches[0]?.clientY ?? 0,
+    };
   };
 
   const handleTouchMove = (event: React.TouchEvent<HTMLDivElement>) => {
-    if (dragStartY.current === null) return;
+    if (!dragStartPoint.current) return;
+    event.preventDefault();
+    const currentX = event.touches[0]?.clientX ?? 0;
     const currentY = event.touches[0]?.clientY ?? 0;
-    const delta = dragStartY.current - currentY;
-    if (!isExpanded && delta > 40) {
+    const deltaX = currentX - dragStartPoint.current.x;
+    const deltaY = currentY - dragStartPoint.current.y;
+    const absX = Math.abs(deltaX);
+    const absY = Math.abs(deltaY);
+
+    if (!isExpanded && deltaY < -40 && absY > absX + 6) {
+      if (isMinimized) {
+        setIsMinimized(false);
+      }
       setIsExpanded(true);
-      dragStartY.current = null;
-    } else if (isExpanded && delta < -40) {
+      dragStartPoint.current = null;
+    } else if (isExpanded && deltaY > 40 && absY > absX + 6) {
       setIsExpanded(false);
-      dragStartY.current = null;
+      dragStartPoint.current = null;
+    } else if (!isExpanded && !isMinimized && deltaY > 40 && absY > absX + 6) {
+      setIsMinimized(true);
+      dragStartPoint.current = null;
     }
   };
 
   const handleTouchEnd = () => {
-    dragStartY.current = null;
+    dragStartPoint.current = null;
   };
 
   const handleQueueTouchStart = (event: React.TouchEvent<HTMLDivElement>) => {
@@ -312,17 +357,30 @@ const TabataPlayerBar = () => {
 
   return (
     <>
-      {isExpanded && (
+      {isExpanded && !isMinimized && (
         <div
           className="fixed inset-0 z-40 bg-slate-900/30"
           onClick={() => setIsExpanded(false)}
         />
       )}
+      <button
+        type="button"
+        style={{ bottom: "calc(var(--bottom-nav-height, 0px) + 10px)" }}
+        className={`fixed left-4 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-indigo-500 via-indigo-600 to-indigo-700 text-white shadow-[0_14px_30px_rgba(79,70,229,0.35)] transition-all duration-300 ease-out will-change-transform ${
+          isClosing ? "translate-y-full" : "translate-y-0"
+        } ${isMinimized ? "opacity-100 scale-100" : "pointer-events-none opacity-0 scale-90"}`}
+        onClick={() => setIsMinimized(false)}
+        aria-label="Show timer"
+      >
+        <span className="text-sm font-semibold">
+          {isFinished ? "Selesai" : formatSeconds(remainingSeconds)}
+        </span>
+      </button>
       <div
         style={{ bottom: "var(--bottom-nav-height, 0px)" }}
-        className={`fixed inset-x-0 z-50 bg-white/95 shadow-[0_-12px_30px_rgba(15,23,42,0.12)] backdrop-blur transition-transform duration-300 ${
+        className={`fixed inset-x-0 z-50 bg-white/95 shadow-[0_-12px_30px_rgba(15,23,42,0.12)] backdrop-blur transition-all duration-300 ease-out will-change-transform touch-none overscroll-contain ${
           isClosing ? "translate-y-full" : "translate-y-0"
-        }`}
+        } ${isMinimized ? "pointer-events-none opacity-0 scale-[0.98] translate-y-2" : "opacity-100 scale-100"}`}
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
@@ -411,11 +469,12 @@ const TabataPlayerBar = () => {
             </div>
           </div>
           <div
-            className={`mx-auto w-full max-w-2xl overflow-hidden transition-all duration-300 ${isExpanded ? "max-h-[60vh] pb-6" : "max-h-0"
-              }`}
+            className={`mx-auto w-full max-w-2xl overflow-hidden transition-all duration-300 ${
+              isExpanded ? "max-h-[60vh] pb-6" : "max-h-0"
+            }`}
           >
             <div
-              className="max-h-[60vh] overflow-y-auto px-4 pb-4"
+              className="max-h-[60vh] overflow-y-auto px-4 pb-4 touch-pan-y overscroll-contain"
               onTouchStart={handleQueueTouchStart}
               onTouchMove={handleQueueTouchMove}
               onTouchEnd={handleQueueTouchEnd}
@@ -441,10 +500,11 @@ const TabataPlayerBar = () => {
                 {queue.map((step, index) => (
                   <div
                     key={step.id}
-                    className={`flex items-center justify-between rounded-xl border px-3 py-2 text-sm ${index === currentIndex
-                      ? "border-emerald-400 bg-emerald-50 text-emerald-700"
-                      : "border-slate-200 bg-white text-slate-600"
-                      }`}
+                    className={`flex items-center justify-between rounded-xl border px-3 py-2 text-sm ${
+                      index === currentIndex
+                        ? "border-emerald-400 bg-emerald-50 text-emerald-700"
+                        : "border-slate-200 bg-white text-slate-600"
+                    }`}
                   >
                     <span>
                       {step.label} • {index + 1}/{queue.length}

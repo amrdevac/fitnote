@@ -19,6 +19,7 @@ import {
   ScaleIcon,
   TimerIcon,
   Upload,
+  XIcon,
 } from "lucide-react";
 import { Card, CardHeader, CardTitle } from "@/ui/card";
 import { Button } from "@/ui/button";
@@ -87,7 +88,6 @@ const MobileWorkoutSessionsSection = ({
   useEffect(() => {
     if (editingSessionId && titleInputRef.current) {
       titleInputRef.current.focus();
-      titleInputRef.current.select();
     }
   }, [editingSessionId]);
 
@@ -105,7 +105,6 @@ const MobileWorkoutSessionsSection = ({
     const success = await commitEditingTitle();
     if (!success && titleInputRef.current) {
       titleInputRef.current.focus();
-      titleInputRef.current.select();
     }
   };
 
@@ -115,7 +114,6 @@ const MobileWorkoutSessionsSection = ({
     const success = await commitEditingTitle();
     if (!success && titleInputRef.current) {
       titleInputRef.current.focus();
-      titleInputRef.current.select();
     }
   };
 
@@ -276,20 +274,36 @@ const MobileWorkoutSessionsSection = ({
                   </div>
                   <div>
                     {isEditingTitle ? (
-                      <input
-                        ref={(node) => {
-                          if (isEditingTitle) {
-                            titleInputRef.current = node;
-                          }
-                        }}
-                        type="text"
-                        value={editingTitle}
-                        onChange={handleTitleChange}
-                        onBlur={handleTitleBlur}
-                        onKeyDown={handleTitleKeyDown}
-                        disabled={isRenamingTitle}
-                        className="mt-2 w-full rounded-2xl border border-slate-200 bg-white/70 px-3 py-2 text-2xl font-semibold text-slate-900 outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100"
-                      />
+                      <div className="relative mt-2">
+                        <input
+                          ref={(node) => {
+                            if (isEditingTitle) {
+                              titleInputRef.current = node;
+                            }
+                          }}
+                          type="text"
+                          value={editingTitle}
+                          onChange={handleTitleChange}
+                          onBlur={handleTitleBlur}
+                          onKeyDown={handleTitleKeyDown}
+                          disabled={isRenamingTitle}
+                          className="w-full rounded-2xl border border-slate-200 bg-white/70 px-3 py-2 pr-10 text-2xl font-semibold text-slate-900 outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100"
+                        />
+                        <button
+                          type="button"
+                          className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full bg-slate-100 p-1 text-slate-500 hover:bg-slate-200"
+                          onMouseDown={(event) => event.preventDefault()}
+                          onClick={() => {
+                            setEditingTitle("");
+                            requestAnimationFrame(() => {
+                              titleInputRef.current?.focus();
+                            });
+                          }}
+                          aria-label="Clear title"
+                        >
+                          <XIcon className="size-4" />
+                        </button>
+                      </div>
                     ) : (
                       <CardTitle
                         className="text-xl font-semibold text-slate-800"
