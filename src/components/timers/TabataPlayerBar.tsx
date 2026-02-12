@@ -125,15 +125,15 @@ const TabataPlayerBar = () => {
         previousPaddingRef.current = document.body.style.paddingBottom;
       }
       if (isMinimized) {
-        root.style.setProperty("--player-offset", "calc(72px + var(--bottom-nav-height, 0px))");
-        document.body.style.paddingBottom = "calc(84px + var(--bottom-nav-height, 0px))";
+        root.style.setProperty("--player-offset", "calc(44px + var(--bottom-nav-height, 0px))");
+        document.body.style.paddingBottom = "calc(52px + var(--bottom-nav-height, 0px))";
         root.style.setProperty(
           "--player-save-bottom",
-          "calc(var(--bottom-nav-height, 0px) + 10px)"
+          "calc(var(--bottom-nav-height, 0px) + -30px)"
         );
       } else {
-        root.style.setProperty("--player-offset", "calc(150px + var(--bottom-nav-height, 0px))");
-        document.body.style.paddingBottom = "calc(120px + var(--bottom-nav-height, 0px))";
+        root.style.setProperty("--player-offset", "calc(100px + var(--bottom-nav-height, 0px))");
+        document.body.style.paddingBottom = "calc(84px + var(--bottom-nav-height, 0px))";
         root.style.setProperty(
           "--player-save-bottom",
           "calc(var(--player-offset, 0px) - 14px)"

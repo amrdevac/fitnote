@@ -664,7 +664,7 @@ const WorkoutBuilder = ({ onClose, embedded = false }: WorkoutBuilderProps) => {
             </SettingsSheet>
           </div>
 
-          <div className="flex flex-col   space-y-5 overflow-y-auto px-6  pt-2  pb-24">
+          <div className="flex flex-col   space-y-5 overflow-y-auto px-6  pt-2  pb-4">
             <div className="space-y-2 rounded-lg border border-white/40 bg-white/90  shadow-[0_25px_50px_rgba(15,23,42,0.08)]">
               <div className="max-h-64 space-y-2 overflow-y-auto pr-1">
                 <div className="flex items-center gap-3 pt-5 pl-2 pr-5">
@@ -1059,8 +1059,8 @@ const WorkoutBuilder = ({ onClose, embedded = false }: WorkoutBuilderProps) => {
           <Button
             style={{
               bottom: isPlayerActive
-                ? "var(--player-save-bottom, calc(var(--player-offset, 0px) - 14px))"
-                : "calc(var(--bottom-nav-height, 0px) + 10px)",
+                ? "calc(var(--player-save-bottom, calc(var(--player-offset, 0px) - 14px)) + 45px)"
+                : "calc(var(--bottom-nav-height, 0px) + 22px)",
             }}
             className="fixed right-5 z-[0] size-14 rounded-full bg-indigo-600 text-white shadow-[0_30px_60px_rgba(79,70,229,0.35)]"
             onClick={() => setConfirmSaveOpen(true)}
